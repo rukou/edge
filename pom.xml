@@ -6,12 +6,8 @@
 
     <groupId>rukou</groupId>
     <artifactId>runner</artifactId>
-    <version>1.0.${timestamp}</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
-    <properties>
-        <timestamp>${maven.build.timestamp}</timestamp>
-        <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
-    </properties>
     <build>
         <sourceDirectory>src</sourceDirectory>
         <plugins>
@@ -80,9 +76,7 @@
                                 <argument>build</argument>
                                 <argument>.</argument>
                                 <argument>-t</argument>
-                                <argument>${project.groupId}:${project.version}</argument>
-                                <argument>-t</argument>
-                                <argument>${project.groupId}:latest</argument>
+                                <argument>rukou-edge:latest</argument>
                                 <argument>--build-arg</argument>
                                 <argument>JAR_FILE=target/${project.build.finalName}.jar</argument>
                             </arguments>
@@ -101,7 +95,7 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>
-            <version>1.90.0</version>
+            <version>1.105.1</version>
         </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
@@ -110,7 +104,7 @@
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>aws-sdk-java</artifactId>
+            <artifactId>sqs</artifactId>
             <version>2.10.60</version>
         </dependency>
         <dependency>

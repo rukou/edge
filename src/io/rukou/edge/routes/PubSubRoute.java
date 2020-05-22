@@ -1,9 +1,9 @@
 package io.rukou.edge.routes;
 
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.PubsubMessage;
 import io.rukou.edge.objects.Message;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SQSRoute extends Route {
+public class PubSubRoute extends Route {
   public String accessKey;
   public String secretKey;
   String requestQueueUrl;
@@ -22,8 +22,8 @@ public class SQSRoute extends Route {
   String requestRegion;
   String responseRegion;
 
-  public SQSRoute() {
-    this.type = "aws-sqs";
+  public PubSubRoute() {
+    this.type = "google-pubsub";
 
   }
 
@@ -59,6 +59,10 @@ public class SQSRoute extends Route {
 
   @Override
   public String invoke(Message msg) {
+    PubsubMessage pubsubMessage =
+        PubsubMessage.newBuilder().setData(ByteString
+            .copyFromUtf8("payload")).putAllAttributes(msg.header).build();
+
     SqsClient sqsClient = SqsClient.builder()
         .region(Region.of(requestRegion))
         .credentialsProvider(

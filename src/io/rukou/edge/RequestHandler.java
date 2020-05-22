@@ -1,15 +1,20 @@
 package io.rukou.edge;
 
-import io.rukou.edge.objects.HttpRequestMessage;
+import com.google.api.client.util.IOUtils;
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import io.rukou.edge.objects.Message;
 import io.rukou.edge.routes.Route;
 import io.rukou.edge.routes.SQSRoute;
+import software.amazon.awssdk.utils.IoUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class RequestHandler implements HttpHandler {
 
@@ -22,7 +27,25 @@ public class RequestHandler implements HttpHandler {
   @Override
   public void handle(HttpExchange exchange) throws IOException {
     try {
-      HttpRequestMessage msg = new HttpRequestMessage(exchange);
+      //extract message object
+      Message msg = new Message();
+      msg.header.put("X-REQUEST-ID", UUID.randomUUID().toString());
+      msg.header.put("X-MESSAGE-VERSION", "2020-05-22");
+      msg.header.put("X-MESSAGE-TYPE","http-request");
+      msg.header.put("X-ENDPOINT-TYPE","echo");
+      msg.header.put("X-HTTP-METHOD", exchange.getRequestMethod());
+      msg.header.put("X-HTTP-PATH", exchange.getRequestURI().getPath());
+      Headers headers = exchange.getRequestHeaders();
+      for(Map.Entry<String, List<String>> entry : headers.entrySet()){
+        String keyName = entry.getKey().toUpperCase();
+        msg.header.put(keyName,String.join(", ",entry.getValue()));
+      }
+      msg.body = IoUtils.toUtf8String(exchange.getRequestBody());
+
+      if(msg.body == null || msg.body.isEmpty()){
+        msg.header.put("X-CONTENT-ISNULL","true");
+        msg.body="$$empty$$";
+      }
 
       String response = "ok";
 

@@ -5,179 +5,61 @@ EXPOSE 8080
 WORKDIR /opt/rukou
 
 #dependencies
-COPY target/dependency/accessanalyzer-2.10.60.jar \
- target/dependency/accessors-smart-1.2.jar \
- target/dependency/acm-2.10.60.jar \
- target/dependency/acmpca-2.10.60.jar \
+COPY target/dependency/accessors-smart-1.2.jar \
  target/dependency/activation-1.1.jar \
  target/dependency/adal4j-1.6.4.jar \
  target/dependency/adapter-rxjava-2.6.2.jar \
- target/dependency/alexaforbusiness-2.10.60.jar \
- target/dependency/amplify-2.10.60.jar \
- target/dependency/animal-sniffer-annotations-1.17.jar \
+ target/dependency/animal-sniffer-annotations-1.18.jar \
  target/dependency/annotations-2.10.60.jar \
- target/dependency/annotations-4.1.1.4.jar \
  target/dependency/apache-client-2.10.60.jar \
- target/dependency/api-common-1.8.1.jar \
- target/dependency/apigateway-2.10.60.jar \
- target/dependency/apigatewaymanagementapi-2.10.60.jar \
- target/dependency/apigatewayv2-2.10.60.jar \
- target/dependency/appconfig-2.10.60.jar \
- target/dependency/applicationautoscaling-2.10.60.jar \
- target/dependency/applicationdiscovery-2.10.60.jar \
- target/dependency/applicationinsights-2.10.60.jar \
- target/dependency/appmesh-2.10.60.jar \
- target/dependency/appstream-2.10.60.jar \
- target/dependency/appsync-2.10.60.jar \
- target/dependency/arns-2.10.60.jar \
+ target/dependency/api-common-1.9.0.jar \
  target/dependency/asm-5.0.4.jar \
  target/dependency/async-http-client-2.10.4.jar \
  target/dependency/async-http-client-netty-utils-2.10.4.jar \
- target/dependency/athena-2.10.60.jar \
  target/dependency/auth-2.10.60.jar \
- target/dependency/auto-value-annotations-1.6.6.jar \
- target/dependency/autoscaling-2.10.60.jar \
- target/dependency/autoscalingplans-2.10.60.jar \
- target/dependency/aws-cbor-protocol-2.10.60.jar \
+ target/dependency/auto-value-annotations-1.7.1.jar \
  target/dependency/aws-core-2.10.60.jar \
- target/dependency/aws-json-protocol-2.10.60.jar \
  target/dependency/aws-query-protocol-2.10.60.jar \
- target/dependency/aws-sdk-java-2.10.60.jar \
- target/dependency/aws-xml-protocol-2.10.60.jar \
  target/dependency/azure-annotations-1.10.0.jar \
  target/dependency/azure-client-authentication-1.7.0.jar \
  target/dependency/azure-client-runtime-1.7.0.jar \
  target/dependency/azure-servicebus-3.1.4.jar \
- target/dependency/backup-2.10.60.jar \
- target/dependency/batch-2.10.60.jar \
- target/dependency/budgets-2.10.60.jar \
  target/dependency/checker-compat-qual-2.5.5.jar \
- target/dependency/chime-2.10.60.jar \
  target/dependency/client-runtime-1.7.0.jar \
- target/dependency/cloud9-2.10.60.jar \
- target/dependency/clouddirectory-2.10.60.jar \
- target/dependency/cloudformation-2.10.60.jar \
- target/dependency/cloudfront-2.10.60.jar \
- target/dependency/cloudhsm-2.10.60.jar \
- target/dependency/cloudhsmv2-2.10.60.jar \
- target/dependency/cloudsearch-2.10.60.jar \
- target/dependency/cloudsearchdomain-2.10.60.jar \
- target/dependency/cloudtrail-2.10.60.jar \
- target/dependency/cloudwatch-2.10.60.jar \
- target/dependency/cloudwatchevents-2.10.60.jar \
- target/dependency/cloudwatchlogs-2.10.60.jar \
- target/dependency/codebuild-2.10.60.jar \
- target/dependency/codecommit-2.10.60.jar \
- target/dependency/codedeploy-2.10.60.jar \
- target/dependency/codeguruprofiler-2.10.60.jar \
- target/dependency/codegurureviewer-2.10.60.jar \
- target/dependency/codepipeline-2.10.60.jar \
- target/dependency/codestar-2.10.60.jar \
- target/dependency/codestarconnections-2.10.60.jar \
- target/dependency/codestarnotifications-2.10.60.jar \
- target/dependency/cognitoidentity-2.10.60.jar \
- target/dependency/cognitoidentityprovider-2.10.60.jar \
- target/dependency/cognitosync-2.10.60.jar \
  target/dependency/commons-codec-1.11.jar \
  target/dependency/commons-lang3-3.5.jar \
  target/dependency/commons-logging-1.2.jar \
- target/dependency/comprehend-2.10.60.jar \
- target/dependency/comprehendmedical-2.10.60.jar \
- target/dependency/computeoptimizer-2.10.60.jar \
- target/dependency/config-2.10.60.jar \
- target/dependency/connect-2.10.60.jar \
- target/dependency/connectparticipant-2.10.60.jar \
+ target/dependency/conscrypt-openjdk-uber-2.2.1.jar \
  target/dependency/converter-jackson-2.5.0.jar \
- target/dependency/costandusagereport-2.10.60.jar \
- target/dependency/costexplorer-2.10.60.jar \
- target/dependency/databasemigration-2.10.60.jar \
- target/dependency/dataexchange-2.10.60.jar \
- target/dependency/datapipeline-2.10.60.jar \
- target/dependency/datasync-2.10.60.jar \
- target/dependency/dax-2.10.60.jar \
- target/dependency/detective-2.10.60.jar \
- target/dependency/devicefarm-2.10.60.jar \
- target/dependency/directconnect-2.10.60.jar \
- target/dependency/directory-2.10.60.jar \
- target/dependency/dlm-2.10.60.jar \
- target/dependency/docdb-2.10.60.jar \
- target/dependency/dynamodb-2.10.60.jar \
- target/dependency/ebs-2.10.60.jar \
- target/dependency/ec2-2.10.60.jar \
- target/dependency/ec2instanceconnect-2.10.60.jar \
- target/dependency/ecr-2.10.60.jar \
- target/dependency/ecs-2.10.60.jar \
- target/dependency/efs-2.10.60.jar \
- target/dependency/eks-2.10.60.jar \
- target/dependency/elasticache-2.10.60.jar \
- target/dependency/elasticbeanstalk-2.10.60.jar \
- target/dependency/elasticinference-2.10.60.jar \
- target/dependency/elasticloadbalancing-2.10.60.jar \
- target/dependency/elasticloadbalancingv2-2.10.60.jar \
- target/dependency/elasticsearch-2.10.60.jar \
- target/dependency/elastictranscoder-2.10.60.jar \
- target/dependency/emr-2.10.60.jar \
- target/dependency/error_prone_annotations-2.3.2.jar \
- target/dependency/eventbridge-2.10.60.jar \
+ target/dependency/error_prone_annotations-2.3.4.jar \
  target/dependency/eventstream-1.0.1.jar \
  target/dependency/failureaccess-1.0.1.jar \
- target/dependency/firehose-2.10.60.jar \
- target/dependency/fms-2.10.60.jar \
- target/dependency/forecast-2.10.60.jar \
- target/dependency/forecastquery-2.10.60.jar \
- target/dependency/frauddetector-2.10.60.jar \
- target/dependency/fsx-2.10.60.jar \
- target/dependency/gamelift-2.10.60.jar \
- target/dependency/gax-1.48.1.jar \
- target/dependency/gax-grpc-1.48.1.jar \
- target/dependency/glacier-2.10.60.jar \
- target/dependency/globalaccelerator-2.10.60.jar \
- target/dependency/glue-2.10.60.jar \
- target/dependency/google-auth-library-credentials-0.17.1.jar \
- target/dependency/google-auth-library-oauth2-http-0.17.1.jar \
- target/dependency/google-cloud-core-1.90.0.jar \
- target/dependency/google-cloud-core-grpc-1.90.0.jar \
- target/dependency/google-cloud-pubsub-1.90.0.jar \
- target/dependency/google-http-client-1.31.0.jar \
- target/dependency/google-http-client-jackson2-1.31.0.jar \
- target/dependency/greengrass-2.10.60.jar \
- target/dependency/groundstation-2.10.60.jar \
- target/dependency/grpc-alts-1.23.0.jar \
- target/dependency/grpc-api-1.23.0.jar \
- target/dependency/grpc-auth-1.23.0.jar \
- target/dependency/grpc-context-1.23.0.jar \
- target/dependency/grpc-core-1.23.0.jar \
- target/dependency/grpc-google-cloud-pubsub-v1-1.72.0.jar \
- target/dependency/grpc-grpclb-1.23.0.jar \
- target/dependency/grpc-netty-shaded-1.23.0.jar \
- target/dependency/grpc-protobuf-1.23.0.jar \
- target/dependency/grpc-protobuf-lite-1.23.0.jar \
- target/dependency/grpc-stub-1.23.0.jar \
+ target/dependency/gax-1.56.0.jar \
+ target/dependency/gax-grpc-1.56.0.jar \
+ target/dependency/google-auth-library-credentials-0.20.0.jar \
+ target/dependency/google-auth-library-oauth2-http-0.20.0.jar \
+ target/dependency/google-cloud-pubsub-1.105.1.jar \
+ target/dependency/google-http-client-1.35.0.jar \
+ target/dependency/google-http-client-jackson2-1.34.0.jar \
+ target/dependency/grpc-alts-1.28.1.jar \
+ target/dependency/grpc-api-1.28.1.jar \
+ target/dependency/grpc-auth-1.28.1.jar \
+ target/dependency/grpc-context-1.27.2.jar \
+ target/dependency/grpc-core-1.28.1.jar \
+ target/dependency/grpc-grpclb-1.28.1.jar \
+ target/dependency/grpc-netty-shaded-1.28.1.jar \
+ target/dependency/grpc-protobuf-1.29.0.jar \
+ target/dependency/grpc-protobuf-lite-1.29.0.jar \
+ target/dependency/grpc-stub-1.29.0.jar \
  target/dependency/gson-2.8.0.jar \
- target/dependency/guardduty-2.10.60.jar \
- target/dependency/guava-28.0-android.jar \
- target/dependency/health-2.10.60.jar \
+ target/dependency/guava-29.0-android.jar \
  target/dependency/http-client-spi-2.10.60.jar \
- target/dependency/httpclient-4.5.9.jar \
- target/dependency/httpcore-4.4.11.jar \
- target/dependency/iam-2.10.60.jar \
- target/dependency/imagebuilder-2.10.60.jar \
- target/dependency/inspector-2.10.60.jar \
- target/dependency/iot1clickdevices-2.10.60.jar \
- target/dependency/iot1clickprojects-2.10.60.jar \
- target/dependency/iot-2.10.60.jar \
- target/dependency/iotanalytics-2.10.60.jar \
- target/dependency/iotdataplane-2.10.60.jar \
- target/dependency/iotevents-2.10.60.jar \
- target/dependency/ioteventsdata-2.10.60.jar \
- target/dependency/iotjobsdataplane-2.10.60.jar \
- target/dependency/iotsecuretunneling-2.10.60.jar \
- target/dependency/iotthingsgraph-2.10.60.jar \
+ target/dependency/httpclient-4.5.12.jar \
+ target/dependency/httpcore-4.4.13.jar \
  target/dependency/j2objc-annotations-1.3.jar \
  target/dependency/jackson-annotations-2.9.0.jar \
  target/dependency/jackson-core-2.10.0.jar \
  target/dependency/jackson-databind-2.10.0.jar \
- target/dependency/jackson-dataformat-cbor-2.10.0.jar \
  target/dependency/jackson-datatype-joda-2.10.0.jar \
  target/dependency/javax.activation-1.2.0.jar \
  target/dependency/javax.annotation-api-1.3.2.jar \
@@ -186,46 +68,9 @@ COPY target/dependency/accessanalyzer-2.10.60.jar \
  target/dependency/joda-time-2.9.9.jar \
  target/dependency/json-smart-2.3.jar \
  target/dependency/jsr305-3.0.2.jar \
- target/dependency/kafka-2.10.60.jar \
- target/dependency/kendra-2.10.60.jar \
- target/dependency/kinesis-2.10.60.jar \
- target/dependency/kinesisanalytics-2.10.60.jar \
- target/dependency/kinesisanalyticsv2-2.10.60.jar \
- target/dependency/kinesisvideo-2.10.60.jar \
- target/dependency/kinesisvideoarchivedmedia-2.10.60.jar \
- target/dependency/kinesisvideomedia-2.10.60.jar \
- target/dependency/kinesisvideosignaling-2.10.60.jar \
- target/dependency/kms-2.10.60.jar \
- target/dependency/lakeformation-2.10.60.jar \
- target/dependency/lambda-2.10.60.jar \
  target/dependency/lang-tag-1.5.jar \
- target/dependency/lexmodelbuilding-2.10.60.jar \
- target/dependency/lexruntime-2.10.60.jar \
- target/dependency/licensemanager-2.10.60.jar \
- target/dependency/lightsail-2.10.60.jar \
  target/dependency/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar \
  target/dependency/logging-interceptor-3.12.2.jar \
- target/dependency/machinelearning-2.10.60.jar \
- target/dependency/macie-2.10.60.jar \
- target/dependency/managedblockchain-2.10.60.jar \
- target/dependency/marketplacecatalog-2.10.60.jar \
- target/dependency/marketplacecommerceanalytics-2.10.60.jar \
- target/dependency/marketplaceentitlement-2.10.60.jar \
- target/dependency/marketplacemetering-2.10.60.jar \
- target/dependency/mediaconnect-2.10.60.jar \
- target/dependency/mediaconvert-2.10.60.jar \
- target/dependency/medialive-2.10.60.jar \
- target/dependency/mediapackage-2.10.60.jar \
- target/dependency/mediapackagevod-2.10.60.jar \
- target/dependency/mediastore-2.10.60.jar \
- target/dependency/mediastoredata-2.10.60.jar \
- target/dependency/mediatailor-2.10.60.jar \
- target/dependency/migrationhub-2.10.60.jar \
- target/dependency/migrationhubconfig-2.10.60.jar \
- target/dependency/mobile-2.10.60.jar \
- target/dependency/mq-2.10.60.jar \
- target/dependency/mturk-2.10.60.jar \
- target/dependency/neptune-2.10.60.jar \
  target/dependency/netty-buffer-4.1.42.Final.jar \
  target/dependency/netty-codec-4.1.42.Final.jar \
  target/dependency/netty-codec-dns-4.1.42.Final.jar \
@@ -244,106 +89,36 @@ COPY target/dependency/accessanalyzer-2.10.60.jar \
  target/dependency/netty-transport-native-epoll-4.1.42.Final-linux-x86_64.jar \
  target/dependency/netty-transport-native-kqueue-4.1.42.Final-osx-x86_64.jar \
  target/dependency/netty-transport-native-unix-common-4.1.42.Final.jar \
- target/dependency/networkmanager-2.10.60.jar \
  target/dependency/nimbus-jose-jwt-8.17.jar \
  target/dependency/oauth2-oidc-sdk-6.5.jar \
  target/dependency/okhttp-3.12.6.jar \
  target/dependency/okhttp-urlconnection-3.12.2.jar \
  target/dependency/okio-1.15.0.jar \
- target/dependency/opencensus-api-0.23.0.jar \
- target/dependency/opencensus-contrib-grpc-metrics-0.21.0.jar \
- target/dependency/opencensus-contrib-http-util-0.21.0.jar \
- target/dependency/opsworks-2.10.60.jar \
- target/dependency/opsworkscm-2.10.60.jar \
- target/dependency/organizations-2.10.60.jar \
- target/dependency/outposts-2.10.60.jar \
- target/dependency/perfmark-api-0.17.0.jar \
- target/dependency/personalize-2.10.60.jar \
- target/dependency/personalizeevents-2.10.60.jar \
- target/dependency/personalizeruntime-2.10.60.jar \
- target/dependency/pi-2.10.60.jar \
- target/dependency/pinpoint-2.10.60.jar \
- target/dependency/pinpointemail-2.10.60.jar \
- target/dependency/pinpointsmsvoice-2.10.60.jar \
- target/dependency/polly-2.10.60.jar \
- target/dependency/pricing-2.10.60.jar \
+ target/dependency/opencensus-api-0.26.0.jar \
+ target/dependency/opencensus-contrib-http-util-0.24.0.jar \
+ target/dependency/perfmark-api-0.19.0.jar \
  target/dependency/profiles-2.10.60.jar \
- target/dependency/proto-google-cloud-pubsub-v1-1.72.0.jar \
- target/dependency/proto-google-common-protos-1.16.0.jar \
- target/dependency/proto-google-iam-v1-0.12.0.jar \
- target/dependency/protobuf-java-3.9.1.jar \
- target/dependency/protobuf-java-util-3.9.1.jar \
+ target/dependency/proto-google-cloud-pubsub-v1-1.87.1.jar \
+ target/dependency/proto-google-common-protos-1.18.0.jar \
+ target/dependency/proto-google-iam-v1-0.13.0.jar \
+ target/dependency/protobuf-java-3.11.4.jar \
+ target/dependency/protobuf-java-util-3.11.0.jar \
  target/dependency/protocol-core-2.10.60.jar \
  target/dependency/proton-j-0.33.2.jar \
- target/dependency/qldb-2.10.60.jar \
- target/dependency/qldbsession-2.10.60.jar \
  target/dependency/qpid-proton-j-extensions-1.2.2.jar \
- target/dependency/quicksight-2.10.60.jar \
- target/dependency/ram-2.10.60.jar \
- target/dependency/rds-2.10.60.jar \
- target/dependency/rdsdata-2.10.60.jar \
  target/dependency/reactive-streams-1.0.2.jar \
- target/dependency/redshift-2.10.60.jar \
  target/dependency/regions-2.10.60.jar \
- target/dependency/rekognition-2.10.60.jar \
- target/dependency/resourcegroups-2.10.60.jar \
- target/dependency/resourcegroupstaggingapi-2.10.60.jar \
  target/dependency/retrofit-2.5.0.jar \
- target/dependency/robomaker-2.10.60.jar \
- target/dependency/route53-2.10.60.jar \
- target/dependency/route53domains-2.10.60.jar \
- target/dependency/route53resolver-2.10.60.jar \
  target/dependency/rxjava-1.3.8.jar \
- target/dependency/s3-2.10.60.jar \
- target/dependency/s3control-2.10.60.jar \
- target/dependency/sagemaker-2.10.60.jar \
- target/dependency/sagemakera2iruntime-2.10.60.jar \
- target/dependency/sagemakerruntime-2.10.60.jar \
- target/dependency/savingsplans-2.10.60.jar \
- target/dependency/schemas-2.10.60.jar \
  target/dependency/sdk-core-2.10.60.jar \
- target/dependency/secretsmanager-2.10.60.jar \
- target/dependency/securityhub-2.10.60.jar \
- target/dependency/serverlessapplicationrepository-2.10.60.jar \
- target/dependency/servicecatalog-2.10.60.jar \
- target/dependency/servicediscovery-2.10.60.jar \
- target/dependency/servicequotas-2.10.60.jar \
- target/dependency/ses-2.10.60.jar \
- target/dependency/sesv2-2.10.60.jar \
- target/dependency/sfn-2.10.60.jar \
- target/dependency/shield-2.10.60.jar \
- target/dependency/signer-2.10.60.jar \
  target/dependency/slf4j-api-1.7.28.jar \
  target/dependency/slf4j-simple-1.7.28.jar \
- target/dependency/sms-2.10.60.jar \
  target/dependency/snakeyaml-1.26.jar \
- target/dependency/snowball-2.10.60.jar \
- target/dependency/sns-2.10.60.jar \
  target/dependency/sqs-2.10.60.jar \
- target/dependency/ssm-2.10.60.jar \
- target/dependency/sso-2.10.60.jar \
- target/dependency/ssooidc-2.10.60.jar \
- target/dependency/storagegateway-2.10.60.jar \
- target/dependency/sts-2.10.60.jar \
- target/dependency/support-2.10.60.jar \
- target/dependency/swf-2.10.60.jar \
- target/dependency/textract-2.10.60.jar \
- target/dependency/threetenbp-1.3.3.jar \
- target/dependency/transcribe-2.10.60.jar \
- target/dependency/transcribestreaming-2.10.60.jar \
- target/dependency/transfer-2.10.60.jar \
- target/dependency/translate-2.10.60.jar \
- target/dependency/utils-2.10.60.jar \
- target/dependency/waf-2.10.60.jar \
- target/dependency/wafv2-2.10.60.jar \
- target/dependency/workdocs-2.10.60.jar \
- target/dependency/worklink-2.10.60.jar \
- target/dependency/workmail-2.10.60.jar \
- target/dependency/workmailmessageflow-2.10.60.jar \
- target/dependency/workspaces-2.10.60.jar \
- target/dependency/xray-2.10.60.jar ./
+ target/dependency/threetenbp-1.4.4.jar \
+ target/dependency/utils-2.10.60.jar ./
 
 #actual code
-COPY ${JAR_FILE} rukou.jar
+COPY ${JAR_FILE} rukou-edge.jar
 
-CMD java -cp accessanalyzer-2.10.60.jar:accessors-smart-1.2.jar:acm-2.10.60.jar:acmpca-2.10.60.jar:activation-1.1.jar:adal4j-1.6.4.jar:adapter-rxjava-2.6.2.jar:alexaforbusiness-2.10.60.jar:amplify-2.10.60.jar:animal-sniffer-annotations-1.17.jar:annotations-2.10.60.jar:annotations-4.1.1.4.jar:apache-client-2.10.60.jar:api-common-1.8.1.jar:apigateway-2.10.60.jar:apigatewaymanagementapi-2.10.60.jar:apigatewayv2-2.10.60.jar:appconfig-2.10.60.jar:applicationautoscaling-2.10.60.jar:applicationdiscovery-2.10.60.jar:applicationinsights-2.10.60.jar:appmesh-2.10.60.jar:appstream-2.10.60.jar:appsync-2.10.60.jar:arns-2.10.60.jar:asm-5.0.4.jar:async-http-client-2.10.4.jar:async-http-client-netty-utils-2.10.4.jar:athena-2.10.60.jar:auth-2.10.60.jar:auto-value-annotations-1.6.6.jar:autoscaling-2.10.60.jar:autoscalingplans-2.10.60.jar:aws-cbor-protocol-2.10.60.jar:aws-core-2.10.60.jar:aws-json-protocol-2.10.60.jar:aws-query-protocol-2.10.60.jar:aws-sdk-java-2.10.60.jar:aws-xml-protocol-2.10.60.jar:azure-annotations-1.10.0.jar:azure-client-authentication-1.7.0.jar:azure-client-runtime-1.7.0.jar:azure-servicebus-3.1.4.jar:backup-2.10.60.jar:batch-2.10.60.jar:budgets-2.10.60.jar:checker-compat-qual-2.5.5.jar:chime-2.10.60.jar:client-runtime-1.7.0.jar:cloud9-2.10.60.jar:clouddirectory-2.10.60.jar:cloudformation-2.10.60.jar:cloudfront-2.10.60.jar:cloudhsm-2.10.60.jar:cloudhsmv2-2.10.60.jar:cloudsearch-2.10.60.jar:cloudsearchdomain-2.10.60.jar:cloudtrail-2.10.60.jar:cloudwatch-2.10.60.jar:cloudwatchevents-2.10.60.jar:cloudwatchlogs-2.10.60.jar:codebuild-2.10.60.jar:codecommit-2.10.60.jar:codedeploy-2.10.60.jar:codeguruprofiler-2.10.60.jar:codegurureviewer-2.10.60.jar:codepipeline-2.10.60.jar:codestar-2.10.60.jar:codestarconnections-2.10.60.jar:codestarnotifications-2.10.60.jar:cognitoidentity-2.10.60.jar:cognitoidentityprovider-2.10.60.jar:cognitosync-2.10.60.jar:commons-codec-1.11.jar:commons-lang3-3.5.jar:commons-logging-1.2.jar:comprehend-2.10.60.jar:comprehendmedical-2.10.60.jar:computeoptimizer-2.10.60.jar:config-2.10.60.jar:connect-2.10.60.jar:connectparticipant-2.10.60.jar:converter-jackson-2.5.0.jar:costandusagereport-2.10.60.jar:costexplorer-2.10.60.jar:databasemigration-2.10.60.jar:dataexchange-2.10.60.jar:datapipeline-2.10.60.jar:datasync-2.10.60.jar:dax-2.10.60.jar:detective-2.10.60.jar:devicefarm-2.10.60.jar:directconnect-2.10.60.jar:directory-2.10.60.jar:dlm-2.10.60.jar:docdb-2.10.60.jar:dynamodb-2.10.60.jar:ebs-2.10.60.jar:ec2-2.10.60.jar:ec2instanceconnect-2.10.60.jar:ecr-2.10.60.jar:ecs-2.10.60.jar:efs-2.10.60.jar:eks-2.10.60.jar:elasticache-2.10.60.jar:elasticbeanstalk-2.10.60.jar:elasticinference-2.10.60.jar:elasticloadbalancing-2.10.60.jar:elasticloadbalancingv2-2.10.60.jar:elasticsearch-2.10.60.jar:elastictranscoder-2.10.60.jar:emr-2.10.60.jar:error_prone_annotations-2.3.2.jar:eventbridge-2.10.60.jar:eventstream-1.0.1.jar:failureaccess-1.0.1.jar:firehose-2.10.60.jar:fms-2.10.60.jar:forecast-2.10.60.jar:forecastquery-2.10.60.jar:frauddetector-2.10.60.jar:fsx-2.10.60.jar:gamelift-2.10.60.jar:gax-1.48.1.jar:gax-grpc-1.48.1.jar:glacier-2.10.60.jar:globalaccelerator-2.10.60.jar:glue-2.10.60.jar:google-auth-library-credentials-0.17.1.jar:google-auth-library-oauth2-http-0.17.1.jar:google-cloud-core-1.90.0.jar:google-cloud-core-grpc-1.90.0.jar:google-cloud-pubsub-1.90.0.jar:google-http-client-1.31.0.jar:google-http-client-jackson2-1.31.0.jar:greengrass-2.10.60.jar:groundstation-2.10.60.jar:grpc-alts-1.23.0.jar:grpc-api-1.23.0.jar:grpc-auth-1.23.0.jar:grpc-context-1.23.0.jar:grpc-core-1.23.0.jar:grpc-google-cloud-pubsub-v1-1.72.0.jar:grpc-grpclb-1.23.0.jar:grpc-netty-shaded-1.23.0.jar:grpc-protobuf-1.23.0.jar:grpc-protobuf-lite-1.23.0.jar:grpc-stub-1.23.0.jar:gson-2.8.0.jar:guardduty-2.10.60.jar:guava-28.0-android.jar:health-2.10.60.jar:http-client-spi-2.10.60.jar:httpclient-4.5.9.jar:httpcore-4.4.11.jar:iam-2.10.60.jar:imagebuilder-2.10.60.jar:inspector-2.10.60.jar:iot1clickdevices-2.10.60.jar:iot1clickprojects-2.10.60.jar:iot-2.10.60.jar:iotanalytics-2.10.60.jar:iotdataplane-2.10.60.jar:iotevents-2.10.60.jar:ioteventsdata-2.10.60.jar:iotjobsdataplane-2.10.60.jar:iotsecuretunneling-2.10.60.jar:iotthingsgraph-2.10.60.jar:j2objc-annotations-1.3.jar:jackson-annotations-2.9.0.jar:jackson-core-2.10.0.jar:jackson-databind-2.10.0.jar:jackson-dataformat-cbor-2.10.0.jar:jackson-datatype-joda-2.10.0.jar:javax.activation-1.2.0.jar:javax.annotation-api-1.3.2.jar:javax.mail-1.6.1.jar:jcip-annotations-1.0-1.jar:joda-time-2.9.9.jar:json-smart-2.3.jar:jsr305-3.0.2.jar:kafka-2.10.60.jar:kendra-2.10.60.jar:kinesis-2.10.60.jar:kinesisanalytics-2.10.60.jar:kinesisanalyticsv2-2.10.60.jar:kinesisvideo-2.10.60.jar:kinesisvideoarchivedmedia-2.10.60.jar:kinesisvideomedia-2.10.60.jar:kinesisvideosignaling-2.10.60.jar:kms-2.10.60.jar:lakeformation-2.10.60.jar:lambda-2.10.60.jar:lang-tag-1.5.jar:lexmodelbuilding-2.10.60.jar:lexruntime-2.10.60.jar:licensemanager-2.10.60.jar:lightsail-2.10.60.jar:listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:logging-interceptor-3.12.2.jar:machinelearning-2.10.60.jar:macie-2.10.60.jar:managedblockchain-2.10.60.jar:marketplacecatalog-2.10.60.jar:marketplacecommerceanalytics-2.10.60.jar:marketplaceentitlement-2.10.60.jar:marketplacemetering-2.10.60.jar:mediaconnect-2.10.60.jar:mediaconvert-2.10.60.jar:medialive-2.10.60.jar:mediapackage-2.10.60.jar:mediapackagevod-2.10.60.jar:mediastore-2.10.60.jar:mediastoredata-2.10.60.jar:mediatailor-2.10.60.jar:migrationhub-2.10.60.jar:migrationhubconfig-2.10.60.jar:mobile-2.10.60.jar:mq-2.10.60.jar:mturk-2.10.60.jar:neptune-2.10.60.jar:netty-buffer-4.1.42.Final.jar:netty-codec-4.1.42.Final.jar:netty-codec-dns-4.1.42.Final.jar:netty-codec-http2-4.1.42.Final.jar:netty-codec-http-4.1.42.Final.jar:netty-codec-socks-4.1.42.Final.jar:netty-common-4.1.42.Final.jar:netty-handler-4.1.42.Final.jar:netty-handler-proxy-4.1.42.Final.jar:netty-nio-client-2.10.60.jar:netty-reactive-streams-2.0.3.jar:netty-reactive-streams-http-2.0.4.jar:netty-resolver-4.1.42.Final.jar:netty-resolver-dns-4.1.42.Final.jar:netty-transport-4.1.42.Final.jar:netty-transport-native-epoll-4.1.42.Final-linux-x86_64.jar:netty-transport-native-kqueue-4.1.42.Final-osx-x86_64.jar:netty-transport-native-unix-common-4.1.42.Final.jar:networkmanager-2.10.60.jar:nimbus-jose-jwt-8.17.jar:oauth2-oidc-sdk-6.5.jar:okhttp-3.12.6.jar:okhttp-urlconnection-3.12.2.jar:okio-1.15.0.jar:opencensus-api-0.23.0.jar:opencensus-contrib-grpc-metrics-0.21.0.jar:opencensus-contrib-http-util-0.21.0.jar:opsworks-2.10.60.jar:opsworkscm-2.10.60.jar:organizations-2.10.60.jar:outposts-2.10.60.jar:perfmark-api-0.17.0.jar:personalize-2.10.60.jar:personalizeevents-2.10.60.jar:personalizeruntime-2.10.60.jar:pi-2.10.60.jar:pinpoint-2.10.60.jar:pinpointemail-2.10.60.jar:pinpointsmsvoice-2.10.60.jar:polly-2.10.60.jar:pricing-2.10.60.jar:profiles-2.10.60.jar:proto-google-cloud-pubsub-v1-1.72.0.jar:proto-google-common-protos-1.16.0.jar:proto-google-iam-v1-0.12.0.jar:protobuf-java-3.9.1.jar:protobuf-java-util-3.9.1.jar:protocol-core-2.10.60.jar:proton-j-0.33.2.jar:qldb-2.10.60.jar:qldbsession-2.10.60.jar:qpid-proton-j-extensions-1.2.2.jar:quicksight-2.10.60.jar:ram-2.10.60.jar:rds-2.10.60.jar:rdsdata-2.10.60.jar:reactive-streams-1.0.2.jar:redshift-2.10.60.jar:regions-2.10.60.jar:rekognition-2.10.60.jar:resourcegroups-2.10.60.jar:resourcegroupstaggingapi-2.10.60.jar:retrofit-2.5.0.jar:robomaker-2.10.60.jar:route53-2.10.60.jar:route53domains-2.10.60.jar:route53resolver-2.10.60.jar:rxjava-1.3.8.jar:s3-2.10.60.jar:s3control-2.10.60.jar:sagemaker-2.10.60.jar:sagemakera2iruntime-2.10.60.jar:sagemakerruntime-2.10.60.jar:savingsplans-2.10.60.jar:schemas-2.10.60.jar:sdk-core-2.10.60.jar:secretsmanager-2.10.60.jar:securityhub-2.10.60.jar:serverlessapplicationrepository-2.10.60.jar:servicecatalog-2.10.60.jar:servicediscovery-2.10.60.jar:servicequotas-2.10.60.jar:ses-2.10.60.jar:sesv2-2.10.60.jar:sfn-2.10.60.jar:shield-2.10.60.jar:signer-2.10.60.jar:slf4j-api-1.7.28.jar:slf4j-simple-1.7.28.jar:sms-2.10.60.jar:snakeyaml-1.26.jar:snowball-2.10.60.jar:sns-2.10.60.jar:sqs-2.10.60.jar:ssm-2.10.60.jar:sso-2.10.60.jar:ssooidc-2.10.60.jar:storagegateway-2.10.60.jar:sts-2.10.60.jar:support-2.10.60.jar:swf-2.10.60.jar:textract-2.10.60.jar:threetenbp-1.3.3.jar:transcribe-2.10.60.jar:transcribestreaming-2.10.60.jar:transfer-2.10.60.jar:translate-2.10.60.jar:utils-2.10.60.jar:waf-2.10.60.jar:wafv2-2.10.60.jar:workdocs-2.10.60.jar:worklink-2.10.60.jar:workmail-2.10.60.jar:workmailmessageflow-2.10.60.jar:workspaces-2.10.60.jar:xray-2.10.60.jar:rukou.jar io.rukou.edge.Main
+CMD java -cp "*" io.rukou.edge.Main

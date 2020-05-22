@@ -1,28 +1,27 @@
 package io.rukou.edge.objects;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.util.UUID;
+public class Message {
+  public Map<String,String> header = new HashMap<>();
+  public String body="";
 
-public abstract class Message {
-  public String requestId = UUID.randomUUID().toString();
-  public String messageType;
-  public String messageVersion="2020-05-21";
-
-  public String toJson(){
-    Gson gson = new Gson();
-    return gson.toJson(this);
+  public String getMessageType(){
+    return header.getOrDefault("X-MESSAGE-TYPE","");
+  }
+  public String getMessageVersion(){
+    return header.getOrDefault("X-MESSAGE-VERSION","");
+  }
+  public String getRequestId(){
+    return header.getOrDefault("X-REQUEST-ID","");
   }
 
-  public String toXml(){
-    ObjectMapper mapper = new ObjectMapper();
-    try {
-      return mapper.writeValueAsString(this);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-      return "";
-    }
+  public String getEndpointType(){
+    return header.getOrDefault("X-ENDPOINT-TYPE","");
+  }
+
+  public String toString(){
+    return "body: "+body;
   }
 }
