@@ -25,6 +25,7 @@ public class HostFilter extends Filter {
       if(hosts.contains(hostname.toLowerCase())){
         chain.doFilter(exchange);
       }else{
+        System.out.println(exchange.getRequestMethod()+" "+exchange.getRequestURI().getPath());
         System.out.println("rejecting unknown host "+hostname);
         Gson g = new Gson();
         System.out.println("headers "+g.toJson(exchange.getRequestHeaders()));

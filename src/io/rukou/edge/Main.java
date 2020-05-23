@@ -1,77 +1,96 @@
 package io.rukou.edge;
 
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import io.rukou.edge.filters.HealthCheckFilter;
 import io.rukou.edge.filters.HostFilter;
-import com.sun.net.httpserver.*;
+import io.rukou.edge.routes.PubSubRoute;
 import io.rukou.edge.routes.Route;
-import io.rukou.edge.routes.SQSRoute;
-import org.yaml.snakeyaml.Yaml;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
   public static int port = 8080;
+  public static ConcurrentHashMap<String, HttpExchange> openConnections = new ConcurrentHashMap<>();
+  public static String podName = "";
 
-  public static void main(String[] args) throws Exception {
-    if (System.getenv().containsKey("port")) {
-      port = Integer.parseInt(System.getenv().get("port"));
-    }
-    if (System.getenv().containsKey("PORT")) {
-      port = Integer.parseInt(System.getenv().get("PORT"));
-    }
+  public static void main(String[] args) {
+    try {
+      Map<String, String> env = System.getenv();
 
-    //get config map from env
-    Yaml y = new Yaml();
-    Map<String, String> e = System.getenv();
+      if (env.containsKey("port")) {
+        port = Integer.parseInt(env.get("port"));
+      }
+      if (env.containsKey("PORT")) {
+        port = Integer.parseInt(env.get("PORT"));
+      }
+      if (env.containsKey("POD_NAME")) {
+        podName = env.get("POD_NAME");
+      }
 
-    //EDGE configuration
-    String edgeConfig = e.get("EDGECONFIG");
-    List<String> hosts = new ArrayList<>();
-    if (edgeConfig != null && !edgeConfig.isEmpty()) {
-      Map<String, Object> x = y.load(edgeConfig);
-
-      //get hosts
-
-      Object t = x.get("hosts");
-      if (t instanceof String) hosts = new ArrayList<String>() {{
-        add(t.toString());
-      }};
-      if (t instanceof List) hosts = (List<String>) t;
-    }
-
-    //ROUTES configuration
-    String routesConfig = e.get("ROUTESCONFIG");
-    List<Route> routes = new ArrayList<>();
-    if (routesConfig != null && !routesConfig.isEmpty()) {
-      Map<String, Object> x = y.load(routesConfig);
-      for (String routeName : x.keySet()) {
-        Map<String, Object> routeConfig = (Map<String, Object>)x.get(routeName);
-        String routeType = (String) routeConfig.get("type");
-        if(routeType!=null && routeType.equals("aws-sqs")){
-          SQSRoute route = new SQSRoute();
-          route.format = routeConfig.getOrDefault("format","json").toString();
-          route.accessKey = routeConfig.getOrDefault("accessKey","").toString();
-          route.secretKey = routeConfig.getOrDefault("secretKey","").toString();
-          route.setRequestQueueUrl(routeConfig.getOrDefault("requestQueueUrl","").toString());
-          route.setResponseQueueUrl(routeConfig.getOrDefault("responseQueueUrl","").toString());
-          routes.add(route);
+      //EDGE configuration
+      List<String> hosts = new ArrayList<>();
+      //look for env variables
+      for (Map.Entry<String, String> entry : env.entrySet()) {
+        String key = entry.getKey();
+        String val = entry.getValue();
+        if (key.toUpperCase().startsWith("EDGE_HOSTS_")) {
+          hosts.add(env.get(key));
         }
       }
-    }
 
-    //start server
-    HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
-    HttpContext all = server.createContext("/", new RequestHandler(routes));
-    all.getFilters().add(new HealthCheckFilter());
-    if (hosts.size() > 0) {
-      all.getFilters().add(new HostFilter(hosts));
-    }
+      //ROUTES configuration
+      List<Route> routes = new ArrayList<>();
+      //look for env variables
+      for (Map.Entry<String, String> entry : env.entrySet()) {
+        String key = entry.getKey();
+        String val = entry.getValue();
+        if (key.toUpperCase().startsWith("ROUTES_") &&
+            key.toUpperCase().endsWith("_TYPE")) {
+          String routeName = key.toUpperCase().replace("ROUTES_", "")
+              .replace("_TYPE", "");
+          String type = val;
+          String edge2localTopic = env.get("ROUTES_" + routeName + "_EDGE2LOCALTOPIC");
+          String l2ePrefix = env.get("ROUTES_" + routeName + "_LOCAL2EDGETOPIC");
+          String local2edgeTopic;
+          if (podName.length() > 0) {
+            local2edgeTopic = l2ePrefix + "-" + podName;
+          } else {
+            local2edgeTopic = l2ePrefix;
+          }
+          String serviceAccount = env.get("ROUTES_" + routeName + "_SERVICEACCOUNT");
+          PubSubRoute pubsub = new PubSubRoute(edge2localTopic, local2edgeTopic, serviceAccount);
+          pubsub.initLocal2EdgeSubscription();
+          routes.add(pubsub);
+          System.out.println("attaching route " + routeName);
+        }
+      }
 
-    System.out.println("rukou edge is running.");
-    System.out.println("http://localhost:" + port + "/");
-    server.start();
+      //start server
+      HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
+      HttpContext all = server.createContext("/", new RequestHandler(routes));
+      all.getFilters().add(new HealthCheckFilter());
+      if (hosts.size() > 0) {
+        all.getFilters().add(new HostFilter(hosts));
+      }
+
+      //shutdown hook
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        System.out.println("shutting down");
+        server.stop(1);
+      }));
+
+      System.out.println("rukou edge is running.");
+      System.out.println("http://localhost:" + port + "/");
+      server.start();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      System.exit(1);
+    }
   }
 }

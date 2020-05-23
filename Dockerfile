@@ -113,7 +113,6 @@ COPY target/dependency/accessors-smart-1.2.jar \
  target/dependency/sdk-core-2.10.60.jar \
  target/dependency/slf4j-api-1.7.28.jar \
  target/dependency/slf4j-simple-1.7.28.jar \
- target/dependency/snakeyaml-1.26.jar \
  target/dependency/sqs-2.10.60.jar \
  target/dependency/threetenbp-1.4.4.jar \
  target/dependency/utils-2.10.60.jar ./

@@ -3,8 +3,8 @@ package io.rukou.edge.routes;
 import io.rukou.edge.objects.Message;
 
 public abstract class Route {
-  public String type;
-  public String format = "json";
+  protected String type;
 
-  public abstract String invoke(Message msg);
+  public abstract String invokeEdge2Local(Message msg);
+  public abstract void initLocal2EdgeSubscription();
 }
