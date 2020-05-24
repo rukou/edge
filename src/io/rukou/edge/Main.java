@@ -166,6 +166,46 @@ public class Main {
               endpoints.add(httpEndpoint);
               System.out.println("adding endpoint " + endpointName);
               break;
+            case "jms":
+              String jmsSelector = env.get("ENDPOINTS_" + endpointName + "_SELECTOR");
+              String jmsRouteName = env.get("ENDPOINTS_" + endpointName + "_ROUTE");
+              Route jmsRoute = null;
+              if (jmsRouteName == null) {
+                jmsRoute = routes.get(0);
+              } else {
+                for (Route r : routes) {
+                  if (r.getId().equalsIgnoreCase(jmsRouteName)) {
+                    jmsRoute = r;
+                  }
+                }
+              }
+              if (jmsRoute == null) {
+                //skip endpoint if config cannot be determined
+                System.out.println("route for endpoint " + endpointName + " not found.");
+                continue;
+              }
+              Map<String, String> jmsHeader = new HashMap<>();
+              String jmsInitialFactory = env.get("ENDPOINTS_" + endpointName + "_INITIALFACTORY");
+              String jmsProviderUrl = env.get("ENDPOINTS_" + endpointName + "_PROVIDERURL");
+              String jmsDestination = env.get("ENDPOINTS_" + endpointName + "_DESTINATION");
+              String jmsUser = env.get("ENDPOINTS_" + endpointName + "_USER");
+              String jmsPassword = env.get("ENDPOINTS_" + endpointName + "_PASSWORD");
+              jmsHeader.put("X-JMS-INITIALFACTORY", jmsInitialFactory);
+              jmsHeader.put("X-JMS-PROVIDERURL", jmsProviderUrl);
+              jmsHeader.put("X-JMS-DESTINATION", jmsDestination);
+              jmsHeader.put("X-JMS-USER", jmsUser);
+              jmsHeader.put("X-JMS-PASSWORD", jmsPassword);
+              Route finalJmsRoute = jmsRoute;
+              Endpoint jmsEndpoint = new Endpoint() {{
+                id = endpointName;
+                type = endpointType;
+                selector = jmsSelector;
+                route = finalJmsRoute;
+                header= jmsHeader;
+              }};
+              endpoints.add(jmsEndpoint);
+              System.out.println("adding endpoint " + endpointName);
+              break;
             default:
               System.out.println("endpoint type cannot be determined for " + endpointName + " with type " + endpointType);
               break;
