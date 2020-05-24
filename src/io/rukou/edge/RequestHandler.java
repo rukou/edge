@@ -3,10 +3,11 @@ package io.rukou.edge;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import io.rukou.edge.objects.Message;
-import io.rukou.edge.routes.Route;
 import software.amazon.awssdk.utils.IoUtils;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -15,10 +16,16 @@ import java.util.UUID;
 
 public class RequestHandler implements HttpHandler {
 
-  List<Route> routes;
+  final List<Endpoint> endpoints;
+  final ScriptEngine jsEngine;
 
-  public RequestHandler(List<Route> routes) {
-    this.routes = routes;
+  public RequestHandler(List<Endpoint> endpoints) {
+    this.endpoints = endpoints;
+    ScriptEngineManager mgr = new ScriptEngineManager();
+    jsEngine = mgr.getEngineByName("JavaScript");
+    if(jsEngine == null){
+      System.err.println("no js engine found");
+    }
   }
 
   @Override
@@ -29,32 +36,38 @@ public class RequestHandler implements HttpHandler {
       String requestId = UUID.randomUUID().toString();
       msg.header.put("X-REQUEST-ID", requestId);
       msg.header.put("X-MESSAGE-VERSION", "2020-05-22");
-      msg.header.put("X-MESSAGE-TYPE","http-request");
-      msg.header.put("X-ENDPOINT-TYPE","echo");
+      msg.header.put("X-MESSAGE-TYPE", "http-request");
       msg.header.put("X-HTTP-METHOD", exchange.getRequestMethod());
       msg.header.put("X-HTTP-PATH", exchange.getRequestURI().getPath());
       msg.header.put("X-HTTP-TIMESTAMP", Instant.now().toString());
+      msg.header.put("X-HTTP-HOST", exchange.getRequestHeaders().getFirst("Host"));
       Headers headers = exchange.getRequestHeaders();
-      for(Map.Entry<String, List<String>> entry : headers.entrySet()){
+      for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
         String keyName = entry.getKey().toUpperCase();
-        msg.header.put(keyName,String.join(", ",entry.getValue()));
+        msg.header.put(keyName, String.join(", ", entry.getValue()));
       }
       msg.body = IoUtils.toUtf8String(exchange.getRequestBody());
-
-      if(msg.body.isEmpty()){
-        msg.header.put("X-CONTENT-ISNULL","true");
-//        msg.body="$$empty$$";
-      }
 
       //put into open connections
       Main.openConnections.put(requestId, exchange);
 
-      //forward to route
-      for (Route r : routes) {
-        r.invokeEdge2Local(msg);
+      //determine endpoint
+      try {
+        jsEngine.put("header", msg.header);
+        for (Endpoint endpoint : endpoints) {
+          jsEngine.eval("result = " + endpoint.selector);
+          Boolean selectorMatches = (Boolean) jsEngine.get("result");
+          if (selectorMatches) {
+            System.out.println("delivering to endpoint " + endpoint.id);
+            msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
+            msg.header.put("X-ENDPOINT-ID", endpoint.id);
+            msg.header.putAll(endpoint.header);
+            endpoint.route.invokeEdge2Local(msg);
+          }
+        }
+      } catch (ScriptException ex) {
+        ex.printStackTrace();
       }
-
-
     } catch (Exception ex) {
       ex.printStackTrace();
       exchange.sendResponseHeaders(500, 0);

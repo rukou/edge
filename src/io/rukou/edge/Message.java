@@ -1,4 +1,4 @@
-package io.rukou.edge.objects;
+package io.rukou.edge;
 
 import java.util.HashMap;
 import java.util.Map;

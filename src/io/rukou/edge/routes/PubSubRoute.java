@@ -11,7 +11,7 @@ import com.google.protobuf.Duration;
 import com.google.pubsub.v1.*;
 import com.sun.net.httpserver.HttpExchange;
 import io.rukou.edge.Main;
-import io.rukou.edge.objects.Message;
+import io.rukou.edge.Message;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -19,20 +19,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 public class PubSubRoute extends Route {
 
   private final String local2edgeTopic;
-  private final String edge2localTopic;
   private CredentialsProvider credentialsProvider = null;
   private Subscription subscription = null;
   Publisher publisher;
+  private String type;
+  private String id;
 
-  public PubSubRoute(String edge2localTopic, String local2edgeTopic, String serviceAccount) {
+  public PubSubRoute(String id, String edge2localTopic, String local2edgeTopic, String serviceAccount) {
     this.type = "google-pubsub";
-    this.edge2localTopic = edge2localTopic;
+    this.id = id;
     this.local2edgeTopic = local2edgeTopic;
     //create account
     InputStream stream = new ByteArrayInputStream(serviceAccount.getBytes(StandardCharsets.UTF_8));
@@ -46,9 +45,9 @@ public class PubSubRoute extends Route {
     try {
       TopicAdminSettings topicAdminSettings = TopicAdminSettings.newBuilder().setCredentialsProvider(credentialsProvider).build();
       try (TopicAdminClient topicAdminClient = TopicAdminClient.create(topicAdminSettings)) {
-        try{
+        try {
           topicAdminClient.getTopic(this.local2edgeTopic);
-        }catch(NotFoundException notfound){
+        } catch (NotFoundException notfound) {
           //create if not exists
           topicAdminClient.createTopic(this.local2edgeTopic);
         }
@@ -63,18 +62,19 @@ public class PubSubRoute extends Route {
           SubscriptionAdminClient.create(subscriptionAdminSettings);
       //empty push config means pull
       PushConfig pushConfig = PushConfig.newBuilder().build();
-      int ackDeadlineSeconds = 30;
+
       //topic sample string
       // projects/test-project/topics/edge2local
       String[] parts = local2edgeTopic.split("/");
       //subscription sample string
       //projects/test-project/subscriptions/local2edge-subscription
-      String subscriptionName = parts[0]+"/"+parts[1]+"/subscriptions/"+parts[3]+"-subscription";
+      String subscriptionName = parts[0] + "/" + parts[1] + "/subscriptions/" + parts[3] + "-subscription";
       try {
         subscription = subscriptionAdminClient.getSubscription(subscriptionName);
-      }catch(NotFoundException notfound){
+      } catch (NotFoundException notfound) {
         //create if not exists
-        Subscription s =Subscription.newBuilder().setAckDeadlineSeconds(30)
+        Subscription s = Subscription.newBuilder()
+            .setAckDeadlineSeconds(30)
             .setMessageRetentionDuration(Duration.newBuilder().setSeconds(600))
             .setName(subscriptionName)
             .setTopic(local2edgeTopic)
@@ -91,15 +91,25 @@ public class PubSubRoute extends Route {
   }
 
   @Override
+  public String getType() {
+    return "google-pubsub";
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
   public String invokeEdge2Local(Message msg) {
     //add reply topic
-    msg.header.put("X-LOCAL2EDGE-DESTINATION",local2edgeTopic);
+    msg.header.put("X-LOCAL2EDGE-DESTINATION", local2edgeTopic);
     PubsubMessage pubsubMessage =
         PubsubMessage.newBuilder().setData(ByteString
             .copyFromUtf8(msg.body)).putAllAttributes(msg.header).build();
 
-      ApiFuture<String> result = publisher.publish(pubsubMessage);
-      System.out.println("send " + msg.getRequestId());
+    ApiFuture<String> result = publisher.publish(pubsubMessage);
+    System.out.println("send " + msg.getRequestId());
     try {
       return result.get();
     } catch (Exception e) {

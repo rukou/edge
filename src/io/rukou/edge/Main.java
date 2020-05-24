@@ -10,6 +10,7 @@ import io.rukou.edge.routes.Route;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,6 +21,7 @@ public class Main {
   public static String podName = "";
 
   public static void main(String[] args) {
+    System.out.println("initializing ...");
     try {
       Map<String, String> env = System.getenv();
 
@@ -34,6 +36,7 @@ public class Main {
       }
 
       //EDGE configuration
+      System.out.println("loading host configuration");
       List<String> hosts = new ArrayList<>();
       //look for env variables
       for (Map.Entry<String, String> entry : env.entrySet()) {
@@ -45,6 +48,7 @@ public class Main {
       }
 
       //ROUTES configuration
+      System.out.println("loading route configuration");
       List<Route> routes = new ArrayList<>();
       //look for env variables
       for (Map.Entry<String, String> entry : env.entrySet()) {
@@ -56,24 +60,122 @@ public class Main {
               .replace("_TYPE", "");
           String type = val;
           String edge2localTopic = env.get("ROUTES_" + routeName + "_EDGE2LOCALTOPIC");
-          String l2ePrefix = env.get("ROUTES_" + routeName + "_LOCAL2EDGETOPIC");
+          //topic sample string
+          // projects/test-project/topics/edge2local
+          String[] parts = edge2localTopic.split("/");
+          String l2ePrefix = env.get("ROUTES_" + routeName + "_LOCAL2EDGEPREFIX");
           String local2edgeTopic;
           if (podName.length() > 0) {
-            local2edgeTopic = l2ePrefix + "-" + podName;
+            local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix + "-" + podName;
           } else {
-            local2edgeTopic = l2ePrefix;
+            local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix;
           }
           String serviceAccount = env.get("ROUTES_" + routeName + "_SERVICEACCOUNT");
-          PubSubRoute pubsub = new PubSubRoute(edge2localTopic, local2edgeTopic, serviceAccount);
-          pubsub.initLocal2EdgeSubscription();
-          routes.add(pubsub);
-          System.out.println("attaching route " + routeName);
+          if (serviceAccount == null) {
+            System.out.println("service account missing for route " + routeName);
+            continue;
+          }
+          try {
+            PubSubRoute pubsub = new PubSubRoute(routeName, edge2localTopic, local2edgeTopic, serviceAccount);
+            pubsub.initLocal2EdgeSubscription();
+            routes.add(pubsub);
+            System.out.println("attaching route " + routeName);
+          } catch (Exception ex) {
+            System.out.println("initializing route " + routeName + " failed");
+            ex.printStackTrace();
+          }
+        }
+      }
+
+      System.out.println("loading endpoint configuration");
+      List<Endpoint> endpoints = new ArrayList<>();
+      //look for env variables
+      for (Map.Entry<String, String> entry : env.entrySet()) {
+        String key = entry.getKey();
+        String val = entry.getValue();
+        if (key.toUpperCase().startsWith("ENDPOINTS_") &&
+            key.toUpperCase().endsWith("_TYPE")) {
+          String endpointName = key.toUpperCase().replace("ENDPOINTS_", "")
+              .replace("_TYPE", "");
+          String endpointType = val.toLowerCase();
+          switch (endpointType) {
+            case "echo":
+              String echoSelector = env.get("ENDPOINTS_" + endpointName + "_SELECTOR");
+              String echoRouteName = env.get("ENDPOINTS_" + endpointName + "_ROUTE");
+              Route echoRoute = null;
+              if (echoRouteName == null) {
+                echoRoute = routes.get(0);
+              } else {
+                for (Route r : routes) {
+                  if (r.getId().equalsIgnoreCase(echoRouteName)) {
+                    echoRoute = r;
+                  }
+                }
+              }
+              if (echoRoute == null) {
+                //skip endpoint if config cannot be determined
+                System.out.println("route for endpoint " + endpointName + " not found.");
+                continue;
+              }
+              Route finalEchoRoute = echoRoute;
+              Endpoint echoEndpoint = new Endpoint() {{
+                id = endpointName;
+                selector = echoSelector;
+                route = finalEchoRoute;
+              }};
+              endpoints.add(echoEndpoint);
+              System.out.println("adding endpoint " + endpointName);
+              break;
+            case "http":
+              String httpSelector = env.get("ENDPOINTS_" + endpointName + "_SELECTOR");
+              String httpRouteName = env.get("ENDPOINTS_" + endpointName + "_ROUTE");
+              Route httpRoute = null;
+              if (httpRouteName == null) {
+                httpRoute = routes.get(0);
+              } else {
+                for (Route r : routes) {
+                  if (r.getId().equalsIgnoreCase(httpRouteName)) {
+                    httpRoute = r;
+                  }
+                }
+              }
+              if (httpRoute == null) {
+                //skip endpoint if config cannot be determined
+                System.out.println("route for endpoint " + endpointName + " not found.");
+                continue;
+              }
+              Map<String, String> httpHeader = new HashMap<>();
+              String httpUrl = env.get("ENDPOINTS_" + endpointName + "_URL");
+              httpHeader.put("X-HTTP-ENDPOINT", httpUrl);
+              for (Map.Entry<String, String> headerEntry : env.entrySet()) {
+                String headerEntryKey = headerEntry.getKey();
+                if (headerEntryKey.toUpperCase().startsWith("ENDPOINTS_" + endpointName + "_HEADER")) {
+                  String headerValue = headerEntry.getValue();
+                  int idx = headerValue.indexOf(":");
+                  httpHeader.put(headerValue.substring(0, idx), headerValue.substring(idx + 1));
+                }
+              }
+              Route finalHttpRoute = httpRoute;
+              Endpoint httpEndpoint = new Endpoint() {{
+                id = endpointName;
+                type = endpointType;
+                selector = httpSelector;
+                route = finalHttpRoute;
+                header= httpHeader;
+              }};
+              endpoints.add(httpEndpoint);
+              System.out.println("adding endpoint " + endpointName);
+              break;
+            default:
+              System.out.println("endpoint type cannot be determined for " + endpointName + " with type " + endpointType);
+              break;
+          }
         }
       }
 
       //start server
       HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
-      HttpContext all = server.createContext("/", new RequestHandler(routes));
+      HttpContext all = server.createContext("/", new RequestHandler(endpoints));
       all.getFilters().add(new HealthCheckFilter());
       if (hosts.size() > 0) {
         all.getFilters().add(new HostFilter(hosts));
@@ -85,7 +187,7 @@ public class Main {
         server.stop(1);
       }));
 
-      System.out.println("rukou edge is running.");
+      System.out.println("Rùkǒu edge is running.");
       System.out.println("http://localhost:" + port + "/");
       server.start();
     } catch (Exception ex) {
