@@ -26,11 +26,9 @@ public class PubSubRoute extends Route {
   private CredentialsProvider credentialsProvider = null;
   private Subscription subscription = null;
   Publisher publisher;
-  private String type;
-  private String id;
+  private final String id;
 
   public PubSubRoute(String id, String edge2localTopic, String local2edgeTopic, String serviceAccount) {
-    this.type = "google-pubsub";
     this.id = id;
     this.local2edgeTopic = local2edgeTopic;
     //create account
@@ -60,8 +58,6 @@ public class PubSubRoute extends Route {
               .build();
       SubscriptionAdminClient subscriptionAdminClient =
           SubscriptionAdminClient.create(subscriptionAdminSettings);
-      //empty push config means pull
-      PushConfig pushConfig = PushConfig.newBuilder().build();
 
       //topic sample string
       // projects/test-project/topics/edge2local
@@ -179,5 +175,9 @@ public class PubSubRoute extends Route {
     } catch (Exception ex) {
       ex.printStackTrace();
     }
+  }
+
+  public void shutdown() {
+    System.out.println("shutting down route " + getId());
   }
 }

@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.rukou.edge.filters.HealthCheckFilter;
 import io.rukou.edge.filters.HostFilter;
+import io.rukou.edge.routes.EventHubRoute;
 import io.rukou.edge.routes.PubSubRoute;
 import io.rukou.edge.routes.Route;
 
@@ -59,31 +60,43 @@ public class Main {
           String routeName = key.toUpperCase().replace("ROUTES_", "")
               .replace("_TYPE", "");
           String type = val;
-          String edge2localTopic = env.get("ROUTES_" + routeName + "_EDGE2LOCALTOPIC");
-          //topic sample string
-          // projects/test-project/topics/edge2local
-          String[] parts = edge2localTopic.split("/");
-          String l2ePrefix = env.get("ROUTES_" + routeName + "_LOCAL2EDGEPREFIX");
-          String local2edgeTopic;
-          if (podName.length() > 0) {
-            local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix + "-" + podName;
-          } else {
-            local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix;
+          switch(type){
+            case "google-pubsub":
+              String edge2localTopic = env.get("ROUTES_" + routeName + "_EDGE2LOCALTOPIC");
+              //topic sample string
+              // projects/test-project/topics/edge2local
+              String[] parts = edge2localTopic.split("/");
+              String l2ePrefix = env.get("ROUTES_" + routeName + "_LOCAL2EDGEPREFIX");
+              String local2edgeTopic;
+              if (podName.length() > 0) {
+                local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix + "-" + podName;
+              } else {
+                local2edgeTopic = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + l2ePrefix;
+              }
+              String serviceAccount = env.get("ROUTES_" + routeName + "_SERVICEACCOUNT");
+              if (serviceAccount == null) {
+                System.out.println("service account missing for route " + routeName);
+                continue;
+              }
+              try {
+                PubSubRoute pubsub = new PubSubRoute(routeName, edge2localTopic, local2edgeTopic, serviceAccount);
+                pubsub.initLocal2EdgeSubscription();
+                routes.add(pubsub);
+                System.out.println("attaching route " + routeName);
+              } catch (Exception ex) {
+                System.out.println("initializing route " + routeName + " failed");
+                ex.printStackTrace();
+              }
+              break;
+            case "azure-eventhub":
+              String edge2localEventhub = env.get("ROUTES_" + routeName + "_EDGE2LOCALEVENTHUB");
+              EventHubRoute eventhub = new EventHubRoute(routeName, edge2localEventhub);
+              eventhub.initLocal2EdgeSubscription();
+              routes.add(eventhub);
+              System.out.println("attaching route " + routeName);
+              break;
           }
-          String serviceAccount = env.get("ROUTES_" + routeName + "_SERVICEACCOUNT");
-          if (serviceAccount == null) {
-            System.out.println("service account missing for route " + routeName);
-            continue;
-          }
-          try {
-            PubSubRoute pubsub = new PubSubRoute(routeName, edge2localTopic, local2edgeTopic, serviceAccount);
-            pubsub.initLocal2EdgeSubscription();
-            routes.add(pubsub);
-            System.out.println("attaching route " + routeName);
-          } catch (Exception ex) {
-            System.out.println("initializing route " + routeName + " failed");
-            ex.printStackTrace();
-          }
+
         }
       }
 
@@ -101,6 +114,9 @@ public class Main {
           switch (endpointType) {
             case "echo":
               String echoSelector = env.get("ENDPOINTS_" + endpointName + "_SELECTOR");
+              if(echoSelector==null || echoSelector.isEmpty()){
+                echoSelector="true";
+              }
               String echoRouteName = env.get("ENDPOINTS_" + endpointName + "_ROUTE");
               Route echoRoute = null;
               if (echoRouteName == null) {
@@ -118,9 +134,10 @@ public class Main {
                 continue;
               }
               Route finalEchoRoute = echoRoute;
+              String finalEchoSelector = echoSelector;
               Endpoint echoEndpoint = new Endpoint() {{
                 id = endpointName;
-                selector = echoSelector;
+                selector = finalEchoSelector;
                 route = finalEchoRoute;
               }};
               endpoints.add(echoEndpoint);
@@ -223,8 +240,10 @@ public class Main {
 
       //shutdown hook
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        System.out.println("shutting down");
+        System.out.println("shutdown initiated");
         server.stop(1);
+        //shutdown all routes
+        routes.parallelStream().forEach(r->r.shutdown());
       }));
 
       System.out.println("Rùkǒu edge is running.");
