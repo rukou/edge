@@ -22,7 +22,6 @@ public class Main {
   public static String podName = "";
 
   public static void main(String[] args) {
-    System.out.println("initializing ...");
     try {
       Map<String, String> env = System.getenv();
 
@@ -37,19 +36,23 @@ public class Main {
       }
 
       //EDGE configuration
-      System.out.println("loading host configuration");
+      System.out.println("host configuration...");
       List<String> hosts = new ArrayList<>();
       //look for env variables
       for (Map.Entry<String, String> entry : env.entrySet()) {
         String key = entry.getKey();
         String val = entry.getValue();
         if (key.toUpperCase().startsWith("EDGE_HOSTS_")) {
-          hosts.add(env.get(key));
+          hosts.add(val);
+          System.out.println("allow host: "+val);
         }
+      }
+      if(hosts.size()==0){
+        System.out.println("no hosts added");
       }
 
       //ROUTES configuration
-      System.out.println("loading route configuration");
+      System.out.println("route configuration...");
       List<Route> routes = new ArrayList<>();
       //look for env variables
       for (Map.Entry<String, String> entry : env.entrySet()) {
@@ -100,7 +103,7 @@ public class Main {
         }
       }
 
-      System.out.println("loading endpoint configuration");
+      System.out.println("endpoint configuration...");
       List<Endpoint> endpoints = new ArrayList<>();
       //look for env variables
       for (Map.Entry<String, String> entry : env.entrySet()) {
@@ -120,7 +123,12 @@ public class Main {
               String echoRouteName = env.get("ENDPOINTS_" + endpointName + "_ROUTE");
               Route echoRoute = null;
               if (echoRouteName == null) {
-                echoRoute = routes.get(0);
+                if(routes.size()>0) {
+                  echoRoute = routes.get(0);
+                }else{
+                  System.err.println("no route defined");
+                  System.exit(1);
+                }
               } else {
                 for (Route r : routes) {
                   if (r.getId().equalsIgnoreCase(echoRouteName)) {
@@ -207,7 +215,9 @@ public class Main {
               String jmsDestination = env.get("ENDPOINTS_" + endpointName + "_DESTINATION");
               String jmsUser = env.get("ENDPOINTS_" + endpointName + "_USER");
               String jmsPassword = env.get("ENDPOINTS_" + endpointName + "_PASSWORD");
+              String jmsFactory = env.getOrDefault("ENDPOINTS_"+endpointName+"_CONNECTIONFACTORY","ConnectionFactory");
               jmsHeader.put("X-JMS-INITIALFACTORY", jmsInitialFactory);
+              jmsHeader.put("X-JMS-CONNECTIONFACTORY", jmsFactory);
               jmsHeader.put("X-JMS-PROVIDERURL", jmsProviderUrl);
               jmsHeader.put("X-JMS-DESTINATION", jmsDestination);
               jmsHeader.put("X-JMS-USER", jmsUser);
