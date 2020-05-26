@@ -179,5 +179,15 @@ public class PubSubRoute extends Route {
 
   public void shutdown() {
     System.out.println("shutting down route " + getId());
-  }
+    System.out.println("deleting topic " + this.local2edgeTopic);
+    //delete topic
+    try {
+      TopicAdminSettings topicAdminSettings = TopicAdminSettings.newBuilder().setCredentialsProvider(credentialsProvider).build();
+      try (TopicAdminClient topicAdminClient = TopicAdminClient.create(topicAdminSettings)) {
+        topicAdminClient.deleteTopic(this.local2edgeTopic);
+      }
+    }catch(Exception ex){
+      ex.printStackTrace();
+    }
+    }
 }
