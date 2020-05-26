@@ -253,7 +253,7 @@ public class Main {
         System.out.println("shutdown initiated");
         server.stop(1);
         //shutdown all routes
-        routes.parallelStream().forEach(r->r.shutdown());
+        routes.parallelStream().forEach(Route::shutdown);
       }));
 
       System.out.println("Rùkǒu edge is running.");
