@@ -9,6 +9,7 @@ import io.rukou.edge.routes.EventHubRoute;
 import io.rukou.edge.routes.PubSubRoute;
 import io.rukou.edge.routes.Route;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,9 +34,10 @@ public class Main {
       }
       if (env.containsKey("POD_NAME")) {
         podName = env.get("POD_NAME");
+      }else{
+        podName = InetAddress.getLocalHost().getHostName();
       }
 
-      //EDGE configuration
       System.out.println("host configuration...");
       List<String> hosts = new ArrayList<>();
       //look for env variables
