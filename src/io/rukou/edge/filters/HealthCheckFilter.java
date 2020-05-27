@@ -17,7 +17,14 @@ public class HealthCheckFilter extends Filter {
       exchange.sendResponseHeaders(200, 0);
       exchange.getResponseBody().close();
     }else{
-      chain.doFilter(exchange);
+
+      if(h.containsKey(userAgent) && h.getFirst(userAgent).equals("kube-probe/1.16+")){
+        exchange.sendResponseHeaders(200, 0);
+        exchange.getResponseBody().close();
+      }else{
+        chain.doFilter(exchange);
+      }
+
     }
   }
 
