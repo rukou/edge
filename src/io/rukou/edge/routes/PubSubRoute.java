@@ -86,6 +86,13 @@ public class PubSubRoute extends Route {
     }
   }
 
+  private String getSubscriptionFromTopic(String topicName){
+    //subscription sample string
+    //projects/test-project/subscriptions/local2edge-subscription
+    String[] parts = topicName.split("/");
+    return parts[0] + "/" + parts[1] + "/subscriptions/" + parts[3] + "-subscription";
+  }
+
   @Override
   public String getType() {
     return "google-pubsub";
@@ -179,6 +186,20 @@ public class PubSubRoute extends Route {
 
   public void shutdown() {
     System.out.println("shutting down route " + getId());
+    String subscriptionName = getSubscriptionFromTopic(local2edgeTopic);
+    System.out.println("deleting subscription " + subscriptionName);
+    //delete subscription
+    try {
+      SubscriptionAdminSettings subscriptionAdminSettings =
+          SubscriptionAdminSettings.newBuilder()
+              .setCredentialsProvider(credentialsProvider)
+              .build();
+      SubscriptionAdminClient subscriptionAdminClient =
+          SubscriptionAdminClient.create(subscriptionAdminSettings);
+      subscriptionAdminClient.deleteSubscription(subscriptionName);
+    }catch(Exception ex){
+      ex.printStackTrace();
+    }
     System.out.println("deleting topic " + this.local2edgeTopic);
     //delete topic
     try {
