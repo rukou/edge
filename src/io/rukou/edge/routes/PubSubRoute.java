@@ -26,9 +26,9 @@ public class PubSubRoute extends Route {
   private CredentialsProvider credentialsProvider = null;
   private Subscription subscription = null;
   Publisher publisher;
-  private final String id;
+  private final int id;
 
-  public PubSubRoute(String id, String edge2localTopic, String local2edgeTopic, String serviceAccount) {
+  public PubSubRoute(int id, String edge2localTopic, String local2edgeTopic, String serviceAccount) {
     this.id = id;
     this.local2edgeTopic = local2edgeTopic;
     //create account
@@ -99,8 +99,13 @@ public class PubSubRoute extends Route {
   }
 
   @Override
-  public String getId() {
+  public int getId() {
     return id;
+  }
+
+  @Override
+  public String getAlias() {
+    return String.valueOf(id);
   }
 
   @Override

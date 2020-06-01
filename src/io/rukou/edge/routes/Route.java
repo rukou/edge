@@ -5,7 +5,8 @@ import io.rukou.edge.Message;
 public abstract class Route {
 
   public abstract String getType();
-  public abstract String getId();
+  public abstract int getId();
+  public abstract String getAlias();
 
   public abstract void shutdown();
 

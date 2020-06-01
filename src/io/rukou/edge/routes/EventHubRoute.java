@@ -4,26 +4,21 @@ import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
 import com.azure.messaging.eventhubs.EventHubProducerClient;
-import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.sun.net.httpserver.HttpExchange;
 import io.rukou.edge.Main;
 import io.rukou.edge.Message;
-import reactor.core.Disposable;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EventHubRoute extends Route {
 
   private final String eventhubNamespaceUrl;
-  private String id;
+  private final int id;
   EventHubProducerClient producer;
 
-  public EventHubRoute(String id, String eventhubNamespaceUrl) {
+  public EventHubRoute(int id, String eventhubNamespaceUrl) {
     this.id = id;
     this.eventhubNamespaceUrl = eventhubNamespaceUrl;
 
@@ -39,8 +34,13 @@ public class EventHubRoute extends Route {
   }
 
   @Override
-  public String getId() {
+  public int getId() {
     return id;
+  }
+
+  @Override
+  public String getAlias() {
+    return String.valueOf(id);
   }
 
   @Override
@@ -51,7 +51,7 @@ public class EventHubRoute extends Route {
     EventData eventData = new EventData(msg.body);
     eventData.getProperties().putAll(msg.header);
 
-    List<EventData> events = Arrays.asList(eventData);
+    List<EventData> events = Collections.singletonList(eventData);
     producer.send(events);
 
     System.out.println("send " + msg.getRequestId());
@@ -64,9 +64,8 @@ public class EventHubRoute extends Route {
         .consumerGroup("$Default")
         .buildAsyncConsumerClient();
 
-    Disposable subscription = consumer.receive(false)
+    consumer.receive(false)
         .subscribe(partitionEvent -> {
-          PartitionContext partitionContext = partitionEvent.getPartitionContext();
           EventData event = partitionEvent.getData();
 
           Message msg = new Message();

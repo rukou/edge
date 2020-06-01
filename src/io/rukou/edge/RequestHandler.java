@@ -58,11 +58,19 @@ public class RequestHandler implements HttpHandler {
           jsEngine.eval("result = " + endpoint.selector);
           Boolean selectorMatches = (Boolean) jsEngine.get("result");
           if (selectorMatches) {
-            System.out.println("delivering to endpoint " + endpoint.id);
-            msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
-            msg.header.put("X-ENDPOINT-ID", endpoint.id);
-            msg.header.putAll(endpoint.header);
-            endpoint.route.invokeEdge2Local(msg);
+            if(endpoint.type.equalsIgnoreCase("echo-on-edge-layer")){
+              System.out.println("delivering to endpoint " + endpoint.id+" (echo-on-edge-layer)");
+              msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
+              msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
+              msg.header.putAll(endpoint.header);
+              EchoUtils.respond(requestId,msg);
+            }else{
+              System.out.println("delivering to endpoint " + endpoint.id);
+              msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
+              msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
+              msg.header.putAll(endpoint.header);
+              endpoint.route.invokeEdge2Local(msg);
+            }
           }
         }
       } catch (ScriptException ex) {
