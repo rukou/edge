@@ -7,6 +7,7 @@ import io.rukou.edge.filters.HealthCheckFilter;
 import io.rukou.edge.filters.HostFilter;
 import io.rukou.edge.routes.EventHubRoute;
 import io.rukou.edge.routes.PubSubRoute;
+import io.rukou.edge.routes.PulsarRoute;
 import io.rukou.edge.routes.Route;
 
 import java.net.InetAddress;
@@ -118,6 +119,14 @@ public class Main {
               eventhub.initLocal2EdgeSubscription();
               routes.add(eventhub);
               System.out.println("attaching route " + routeNumber);
+              break;
+            case "apache-pulsar":
+              String edge2localPulsarTopic = env.get("ROUTES_" + routeNumber + "_EDGE2LOCALTOPIC");
+              String local2edgePulsarTopic = env.get("ROUTES_" + routeNumber + "_LOCAL2EDGETOPIC");
+              String pulsarUrl = env.get("ROUTES_" + routeNumber + "_URL");
+              PulsarRoute pulsar = new PulsarRoute(routeNumberInt,pulsarUrl);
+              pulsar.initLocal2EdgeSubscription();
+              routes.add(pulsar);
               break;
           }
 

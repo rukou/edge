@@ -53,11 +53,11 @@ public class PubSubRoute extends Route {
 
       //create subscription
       SubscriptionAdminSettings subscriptionAdminSettings =
-          SubscriptionAdminSettings.newBuilder()
-              .setCredentialsProvider(credentialsProvider)
-              .build();
+              SubscriptionAdminSettings.newBuilder()
+                      .setCredentialsProvider(credentialsProvider)
+                      .build();
       SubscriptionAdminClient subscriptionAdminClient =
-          SubscriptionAdminClient.create(subscriptionAdminSettings);
+              SubscriptionAdminClient.create(subscriptionAdminSettings);
 
       //topic sample string
       // projects/test-project/topics/edge2local
@@ -66,27 +66,36 @@ public class PubSubRoute extends Route {
       //projects/test-project/subscriptions/local2edge-subscription
       String subscriptionName = parts[0] + "/" + parts[1] + "/subscriptions/" + parts[3] + "-subscription";
       try {
+        System.out.println("getting subscription: " + subscriptionName);
         subscription = subscriptionAdminClient.getSubscription(subscriptionName);
       } catch (NotFoundException notfound) {
         //create if not exists
         Subscription s = Subscription.newBuilder()
-            .setAckDeadlineSeconds(30)
-            .setMessageRetentionDuration(Duration.newBuilder().setSeconds(600))
-            .setName(subscriptionName)
-            .setTopic(local2edgeTopic)
-            .setFilter("test=1")
-            .build();
+                .setAckDeadlineSeconds(30)
+                .setMessageRetentionDuration(Duration.newBuilder().setSeconds(600))
+                .setName(subscriptionName)
+                .setTopic(local2edgeTopic)
+                .build();
+        System.out.println("creating subscription: " + subscriptionName);
         subscription = subscriptionAdminClient.createSubscription(s);
       }
 
       //create publisher
-      publisher = Publisher.newBuilder(edge2localTopic).setCredentialsProvider(credentialsProvider).build();
+      try {
+        publisher = Publisher.newBuilder(edge2localTopic).setCredentialsProvider(credentialsProvider).build();
+      } catch (Exception ex) {
+        System.out.println("edge2local topic does not exist");
+        try (TopicAdminClient topicAdminClient = TopicAdminClient.create(topicAdminSettings)) {
+          topicAdminClient.createTopic(edge2localTopic);
+          publisher = Publisher.newBuilder(edge2localTopic).setCredentialsProvider(credentialsProvider).build();
+        }
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  private String getSubscriptionFromTopic(String topicName){
+  private String getSubscriptionFromTopic(String topicName) {
     //subscription sample string
     //projects/test-project/subscriptions/local2edge-subscription
     String[] parts = topicName.split("/");
@@ -113,8 +122,8 @@ public class PubSubRoute extends Route {
     //add reply topic
     msg.header.put("X-LOCAL2EDGE-DESTINATION", local2edgeTopic);
     PubsubMessage pubsubMessage =
-        PubsubMessage.newBuilder().setData(ByteString
-            .copyFromUtf8(msg.body)).putAllAttributes(msg.header).build();
+            PubsubMessage.newBuilder().setData(ByteString
+                    .copyFromUtf8(msg.body)).putAllAttributes(msg.header).build();
 
     ApiFuture<String> result = publisher.publish(pubsubMessage);
     System.out.println("send " + msg.getRequestId());
@@ -130,43 +139,43 @@ public class PubSubRoute extends Route {
     try {
       new Thread(() -> {
         MessageReceiver receiver =
-            (message, consumer) -> {
-              Message msg = new Message();
-              msg.header = message.getAttributesMap();
-              msg.body = message.getData().toStringUtf8();
+                (message, consumer) -> {
+                  Message msg = new Message();
+                  msg.header = message.getAttributesMap();
+                  msg.body = message.getData().toStringUtf8();
 
-              String requestId = msg.getRequestId();
-              System.out.println("received " + requestId);
-              HttpExchange exchange = Main.openConnections.get(requestId);
+                  String requestId = msg.getRequestId();
+                  System.out.println("received " + requestId);
+                  HttpExchange exchange = Main.openConnections.get(requestId);
 
-              if (exchange == null) {
-                System.out.println("no client to send response to");
-                System.out.println(Main.openConnections.size() + " pending connections");
-                System.out.println("looking for " + requestId);
-                Enumeration<String> keys = Main.openConnections.keys();
-                while (keys.hasMoreElements()) {
-                  String kk = keys.nextElement();
-                  System.out.println(kk + " " + kk.equals(requestId));
-                }
-              } else {
-                Main.openConnections.remove(requestId);
-                try {
-                  String statusCodeString = msg.header.get("X-HTTP-STATUSCODE");
-                  int statusCode = Integer.parseInt(statusCodeString);
+                  if (exchange == null) {
+                    System.out.println("no client to send response to");
+                    System.out.println(Main.openConnections.size() + " pending connections");
+                    System.out.println("looking for " + requestId);
+                    Enumeration<String> keys = Main.openConnections.keys();
+                    while (keys.hasMoreElements()) {
+                      String kk = keys.nextElement();
+                      System.out.println(kk + " " + kk.equals(requestId));
+                    }
+                  } else {
+                    Main.openConnections.remove(requestId);
+                    try {
+                      String statusCodeString = msg.header.get("X-HTTP-STATUSCODE");
+                      int statusCode = Integer.parseInt(statusCodeString);
 
-                  byte[] out = msg.body.getBytes(StandardCharsets.UTF_8);
-                  exchange.getResponseHeaders().add("Content-Type", "application/json");
-                  exchange.sendResponseHeaders(statusCode, out.length);
-                  OutputStream os = exchange.getResponseBody();
-                  os.write(out);
-                  os.close();
-                } catch (Exception ex) {
-                  ex.printStackTrace();
-                }
-              }
+                      byte[] out = msg.body.getBytes(StandardCharsets.UTF_8);
+                      exchange.getResponseHeaders().add("Content-Type", "application/json");
+                      exchange.sendResponseHeaders(statusCode, out.length);
+                      OutputStream os = exchange.getResponseBody();
+                      os.write(out);
+                      os.close();
+                    } catch (Exception ex) {
+                      ex.printStackTrace();
+                    }
+                  }
 
-              consumer.ack();
-            };
+                  consumer.ack();
+                };
 
         Subscriber subscriber = null;
         try {
@@ -196,13 +205,13 @@ public class PubSubRoute extends Route {
     //delete subscription
     try {
       SubscriptionAdminSettings subscriptionAdminSettings =
-          SubscriptionAdminSettings.newBuilder()
-              .setCredentialsProvider(credentialsProvider)
-              .build();
+              SubscriptionAdminSettings.newBuilder()
+                      .setCredentialsProvider(credentialsProvider)
+                      .build();
       SubscriptionAdminClient subscriptionAdminClient =
-          SubscriptionAdminClient.create(subscriptionAdminSettings);
+              SubscriptionAdminClient.create(subscriptionAdminSettings);
       subscriptionAdminClient.deleteSubscription(subscriptionName);
-    }catch(Exception ex){
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     System.out.println("deleting topic " + this.local2edgeTopic);
@@ -212,8 +221,8 @@ public class PubSubRoute extends Route {
       try (TopicAdminClient topicAdminClient = TopicAdminClient.create(topicAdminSettings)) {
         topicAdminClient.deleteTopic(this.local2edgeTopic);
       }
-    }catch(Exception ex){
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
-    }
+  }
 }
