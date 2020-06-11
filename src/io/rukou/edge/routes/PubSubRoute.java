@@ -5,20 +5,28 @@ import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.cloud.pubsub.v1.*;
+import com.google.cloud.pubsub.v1.MessageReceiver;
+import com.google.cloud.pubsub.v1.Publisher;
+import com.google.cloud.pubsub.v1.Subscriber;
+import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
+import com.google.cloud.pubsub.v1.SubscriptionAdminSettings;
+import com.google.cloud.pubsub.v1.TopicAdminClient;
+import com.google.cloud.pubsub.v1.TopicAdminSettings;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Duration;
-import com.google.pubsub.v1.*;
-import com.sun.net.httpserver.HttpExchange;
+import com.google.pubsub.v1.PubsubMessage;
+import com.google.pubsub.v1.Subscription;
 import io.rukou.edge.Main;
 import io.rukou.edge.Message;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
+import java.util.concurrent.TimeUnit;
 
 public class PubSubRoute extends Route {
 
@@ -37,6 +45,7 @@ public class PubSubRoute extends Route {
       ServiceAccountCredentials account = ServiceAccountCredentials.fromStream(stream);
       credentialsProvider = FixedCredentialsProvider.create(account);
     } catch (IOException e) {
+      System.err.println("error while parsing service account credentials");
       e.printStackTrace();
     }
     //create topic
@@ -49,6 +58,8 @@ public class PubSubRoute extends Route {
           //create if not exists
           topicAdminClient.createTopic(this.local2edgeTopic);
         }
+        topicAdminClient.shutdown();
+        topicAdminClient.awaitTermination(1, TimeUnit.SECONDS);
       }
 
       //create subscription
@@ -79,6 +90,8 @@ public class PubSubRoute extends Route {
         System.out.println("creating subscription: " + subscriptionName);
         subscription = subscriptionAdminClient.createSubscription(s);
       }
+      subscriptionAdminClient.shutdown();
+      subscriptionAdminClient.awaitTermination(1, TimeUnit.SECONDS);
 
       //create publisher
       try {
@@ -88,9 +101,12 @@ public class PubSubRoute extends Route {
         try (TopicAdminClient topicAdminClient = TopicAdminClient.create(topicAdminSettings)) {
           topicAdminClient.createTopic(edge2localTopic);
           publisher = Publisher.newBuilder(edge2localTopic).setCredentialsProvider(credentialsProvider).build();
+          topicAdminClient.shutdown();
+          topicAdminClient.awaitTermination(1, TimeUnit.SECONDS);
         }
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
+      System.err.println("error while creating route "+id);
       e.printStackTrace();
     }
   }
@@ -146,7 +162,7 @@ public class PubSubRoute extends Route {
 
                   String requestId = msg.getRequestId();
                   System.out.println("received " + requestId);
-                  HttpExchange exchange = Main.openConnections.get(requestId);
+                  HttpServerExchange exchange = Main.openConnections.get(requestId);
 
                   if (exchange == null) {
                     System.out.println("no client to send response to");
@@ -163,12 +179,11 @@ public class PubSubRoute extends Route {
                       String statusCodeString = msg.header.get("X-HTTP-STATUSCODE");
                       int statusCode = Integer.parseInt(statusCodeString);
 
-                      byte[] out = msg.body.getBytes(StandardCharsets.UTF_8);
-                      exchange.getResponseHeaders().add("Content-Type", "application/json");
-                      exchange.sendResponseHeaders(statusCode, out.length);
-                      OutputStream os = exchange.getResponseBody();
-                      os.write(out);
-                      os.close();
+                      exchange.setStatusCode(statusCode);
+                      exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                      exchange.getResponseSender().send(msg.body);
+                      exchange.getResponseSender().close();
+                      exchange.endExchange();
                     } catch (Exception ex) {
                       ex.printStackTrace();
                     }
@@ -184,6 +199,7 @@ public class PubSubRoute extends Route {
           // Allow the subscriber to run indefinitely unless an unrecoverable error occurs
           subscriber.awaitTerminated();
         } catch (Exception ex) {
+          System.err.println("subscription was terminated");
           ex.printStackTrace();
         } finally {
           // Stop receiving messages
@@ -194,6 +210,7 @@ public class PubSubRoute extends Route {
       }).start();
 
     } catch (Exception ex) {
+      System.err.println("error initializing local2edge subscription");
       ex.printStackTrace();
     }
   }

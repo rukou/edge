@@ -1,26 +1,33 @@
 package io.rukou.edge;
 
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
-import io.rukou.edge.filters.HealthCheckFilter;
-import io.rukou.edge.filters.HostFilter;
+import io.rukou.edge.filters.HealthCheckHandler;
+import io.rukou.edge.filters.HostHandler;
+import io.rukou.edge.routes.EchoRoute;
 import io.rukou.edge.routes.EventHubRoute;
 import io.rukou.edge.routes.PubSubRoute;
 import io.rukou.edge.routes.PulsarRoute;
 import io.rukou.edge.routes.Route;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
   public static int port = 8080;
-  public static ConcurrentHashMap<String, HttpExchange> openConnections = new ConcurrentHashMap<>();
+  public static ConcurrentHashMap<String, HttpServerExchange> openConnections = new ConcurrentHashMap<>();
   public static String podName = "";
 
   public static void main(String[] args) {
+    //disable undertow logging
+    System.setProperty("org.jboss.logging.provider", "slf4j");
+
     try {
       Map<String, String> env = System.getenv();
 
@@ -42,10 +49,10 @@ public class Main {
       for (Map.Entry<String, String> entry : env.entrySet()) {
         String key = entry.getKey();
         if (key.toUpperCase().startsWith("HOSTS_")
-            && key.toUpperCase().endsWith("_DOMAIN")) {
+                && key.toUpperCase().endsWith("_DOMAIN")) {
           String val = entry.getValue().toLowerCase();
           String id = key.toUpperCase().replace("HOSTS_", "")
-              .replace("_DOMAIN", "");
+                  .replace("_DOMAIN", "");
           Host host = new Host();
           host.domain = val;
           if (env.containsKey("HOSTS_" + id + "_AUTH")) {
@@ -80,9 +87,9 @@ public class Main {
         String key = entry.getKey();
         String val = entry.getValue();
         if (key.toUpperCase().startsWith("ROUTES_") &&
-            key.toUpperCase().endsWith("_TYPE")) {
+                key.toUpperCase().endsWith("_TYPE")) {
           String routeNumber = key.toUpperCase().replace("ROUTES_", "")
-              .replace("_TYPE", "");
+                  .replace("_TYPE", "");
           int routeNumberInt = Integer.parseInt(routeNumber);
           String type = val;
           switch (type) {
@@ -124,7 +131,7 @@ public class Main {
               String edge2localPulsarTopic = env.get("ROUTES_" + routeNumber + "_EDGE2LOCALTOPIC");
               String local2edgePulsarTopic = env.get("ROUTES_" + routeNumber + "_LOCAL2EDGETOPIC");
               String pulsarUrl = env.get("ROUTES_" + routeNumber + "_URL");
-              PulsarRoute pulsar = new PulsarRoute(routeNumberInt,pulsarUrl);
+              PulsarRoute pulsar = new PulsarRoute(routeNumberInt, pulsarUrl);
               pulsar.initLocal2EdgeSubscription();
               routes.add(pulsar);
               break;
@@ -135,187 +142,188 @@ public class Main {
 
       System.out.println("endpoint configuration...");
       List<Endpoint> endpoints = new ArrayList<>();
-      //look for env variables
-      for (Map.Entry<String, String> entry : env.entrySet()) {
-        String key = entry.getKey();
-        String val = entry.getValue();
-        if (key.toUpperCase().startsWith("ENDPOINTS_") &&
-            key.toUpperCase().endsWith("_TYPE")) {
-          String endpointNumber = key.toUpperCase().replace("ENDPOINTS_", "")
-              .replace("_TYPE", "");
+      if (routes.size() > 0) {
+        //look for env variables
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+          String key = entry.getKey();
+          String val = entry.getValue();
+          if (key.toUpperCase().startsWith("ENDPOINTS_") &&
+                  key.toUpperCase().endsWith("_TYPE")) {
+            String endpointNumber = key.toUpperCase().replace("ENDPOINTS_", "")
+                    .replace("_TYPE", "");
 
-          final int endpointId;
-          try {
-            endpointId = Integer.parseInt(endpointNumber);
-          } catch (Exception ex) {
-            System.err.println("skipping endpoint, because id could not be determined or is not numeric: " + key);
-            continue;
-          }
-          String endpointType = val.toLowerCase();
-          switch (endpointType) {
-            case "echo-on-edge-layer":
-              String echoEdgeSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
-              if (echoEdgeSelector == null || echoEdgeSelector.isEmpty()) {
-                echoEdgeSelector = "true";
-              }
-              String echoEdgeRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
-              Route echoEdgeRoute = null;
-              if (echoEdgeRouteName == null) {
-                if (routes.size() > 0) {
-                  echoEdgeRoute = routes.get(0);
+            final int endpointId;
+            try {
+              endpointId = Integer.parseInt(endpointNumber);
+            } catch (Exception ex) {
+              System.err.println("skipping endpoint, because id could not be determined or is not numeric: " + key);
+              continue;
+            }
+            String endpointType = val.toLowerCase();
+            switch (endpointType) {
+              case "echo-on-edge-layer":
+                String echoEdgeSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
+                if (echoEdgeSelector == null || echoEdgeSelector.isEmpty()) {
+                  echoEdgeSelector = "true";
+                }
+                String finalEchoEdgeSelector = echoEdgeSelector;
+                Endpoint echoEdgeEndpoint = new Endpoint() {{
+                  id = endpointId;
+                  type = "echo-on-edge-layer";
+                  selector = finalEchoEdgeSelector;
+                  route = new EchoRoute(999);
+                }};
+                endpoints.add(echoEdgeEndpoint);
+                System.out.println("adding endpoint " + endpointNumber);
+                break;
+              case "echo-on-local-layer":
+                String echoSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
+                if (echoSelector == null || echoSelector.isEmpty()) {
+                  echoSelector = "true";
+                }
+                String echoRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
+                Route echoRoute = null;
+                if (echoRouteName == null) {
+                  if (routes.size() > 0) {
+                    echoRoute = routes.get(0);
+                  } else {
+                    System.err.println("no route defined");
+                    System.exit(1);
+                  }
                 } else {
-                  System.err.println("no route defined");
-                  System.exit(1);
+                  //look for numeric router identifier
+                  echoRoute = getRouteFromList(routes, echoRouteName);
                 }
-              } else {
-                //look for numeric router identifier
-                echoEdgeRoute = getRouteFromList(routes, echoEdgeRouteName);
-              }
-
-              if (echoEdgeRoute == null) {
-                //skip endpoint if config cannot be determined
-                System.out.println("route for endpoint " + endpointNumber + " not found.");
-                continue;
-              }
-              Route finalEchoEdgeRoute = echoEdgeRoute;
-              String finalEchoEdgeSelector = echoEdgeSelector;
-              Endpoint echoEdgeEndpoint = new Endpoint() {{
-                id = endpointId;
-                type = "echo-on-edge-layer";
-                selector = finalEchoEdgeSelector;
-                route = finalEchoEdgeRoute;
-              }};
-              endpoints.add(echoEdgeEndpoint);
-              System.out.println("adding endpoint " + endpointNumber);
-              break;
-            case "echo-on-local-layer":
-              String echoSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
-              if (echoSelector == null || echoSelector.isEmpty()) {
-                echoSelector = "true";
-              }
-              String echoRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
-              Route echoRoute = null;
-              if (echoRouteName == null) {
-                if (routes.size() > 0) {
-                  echoRoute = routes.get(0);
+                if (echoRoute == null) {
+                  //skip endpoint if config cannot be determined
+                  System.out.println("route for endpoint " + endpointNumber + " not found.");
+                  continue;
+                }
+                Route finalEchoRoute = echoRoute;
+                String finalEchoSelector = echoSelector;
+                Endpoint echoEndpoint = new Endpoint() {{
+                  id = endpointId;
+                  type = "echo-on-local-layer";
+                  selector = finalEchoSelector;
+                  route = finalEchoRoute;
+                }};
+                endpoints.add(echoEndpoint);
+                System.out.println("adding endpoint " + endpointNumber);
+                break;
+              case "http":
+                String httpSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
+                String httpRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
+                Route httpRoute;
+                if (httpRouteName == null) {
+                  httpRoute = routes.get(0);
                 } else {
-                  System.err.println("no route defined");
-                  System.exit(1);
+                  httpRoute = getRouteFromList(routes, httpRouteName);
                 }
-              } else {
-                //look for numeric router identifier
-                echoRoute = getRouteFromList(routes, echoRouteName);
-              }
-              if (echoRoute == null) {
-                //skip endpoint if config cannot be determined
-                System.out.println("route for endpoint " + endpointNumber + " not found.");
-                continue;
-              }
-              Route finalEchoRoute = echoRoute;
-              String finalEchoSelector = echoSelector;
-              Endpoint echoEndpoint = new Endpoint() {{
-                id = endpointId;
-                type = "echo-on-local-layer";
-                selector = finalEchoSelector;
-                route = finalEchoRoute;
-              }};
-              endpoints.add(echoEndpoint);
-              System.out.println("adding endpoint " + endpointNumber);
-              break;
-            case "http":
-              String httpSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
-              String httpRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
-              Route httpRoute = null;
-              if (httpRouteName == null) {
-                httpRoute = routes.get(0);
-              } else {
-                httpRoute = getRouteFromList(routes, httpRouteName);
-              }
-              if (httpRoute == null) {
-                //skip endpoint if config cannot be determined
-                System.out.println("route for endpoint " + endpointNumber + " not found.");
-                continue;
-              }
-              Map<String, String> httpHeader = new HashMap<>();
-              String httpUrl = env.get("ENDPOINTS_" + endpointNumber + "_URL");
-              httpHeader.put("X-HTTP-ENDPOINT", httpUrl);
-              for (Map.Entry<String, String> headerEntry : env.entrySet()) {
-                String headerEntryKey = headerEntry.getKey();
-                if (headerEntryKey.toUpperCase().startsWith("ENDPOINTS_" + endpointNumber + "_HEADER")) {
-                  String headerValue = headerEntry.getValue();
-                  int idx = headerValue.indexOf(":");
-                  httpHeader.put(headerValue.substring(0, idx), headerValue.substring(idx + 1));
+                if (httpRoute == null) {
+                  //skip endpoint if config cannot be determined
+                  System.out.println("route for endpoint " + endpointNumber + " not found.");
+                  continue;
                 }
-              }
-              Route finalHttpRoute = httpRoute;
-              Endpoint httpEndpoint = new Endpoint() {{
-                id = endpointId;
-                type = endpointType;
-                selector = httpSelector;
-                route = finalHttpRoute;
-                header = httpHeader;
-              }};
-              endpoints.add(httpEndpoint);
-              System.out.println("adding endpoint " + endpointNumber);
-              break;
-            case "jms":
-              String jmsSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
-              String jmsRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
-              Route jmsRoute = null;
-              if (jmsRouteName == null) {
-                jmsRoute = routes.get(0);
-              } else {
-                jmsRoute = getRouteFromList(routes, jmsRouteName);
-              }
-              if (jmsRoute == null) {
-                //skip endpoint if config cannot be determined
-                System.out.println("route for endpoint " + endpointNumber + " not found.");
-                continue;
-              }
-              Map<String, String> jmsHeader = new HashMap<>();
-              String jmsInitialFactory = env.get("ENDPOINTS_" + endpointNumber + "_INITIALFACTORY");
-              String jmsProviderUrl = env.get("ENDPOINTS_" + endpointNumber + "_PROVIDERURL");
-              String jmsDestination = env.get("ENDPOINTS_" + endpointNumber + "_DESTINATION");
-              String jmsUser = env.get("ENDPOINTS_" + endpointNumber + "_USER");
-              String jmsPassword = env.get("ENDPOINTS_" + endpointNumber + "_PASSWORD");
-              String jmsFactory = env.getOrDefault("ENDPOINTS_" + endpointNumber + "_CONNECTIONFACTORY", "ConnectionFactory");
-              jmsHeader.put("X-JMS-INITIALFACTORY", jmsInitialFactory);
-              jmsHeader.put("X-JMS-CONNECTIONFACTORY", jmsFactory);
-              jmsHeader.put("X-JMS-PROVIDERURL", jmsProviderUrl);
-              jmsHeader.put("X-JMS-DESTINATION", jmsDestination);
-              jmsHeader.put("X-JMS-USER", jmsUser);
-              jmsHeader.put("X-JMS-PASSWORD", jmsPassword);
-              Route finalJmsRoute = jmsRoute;
-              Endpoint jmsEndpoint = new Endpoint() {{
-                id = endpointId;
-                type = endpointType;
-                selector = jmsSelector;
-                route = finalJmsRoute;
-                header = jmsHeader;
-              }};
-              endpoints.add(jmsEndpoint);
-              System.out.println("adding endpoint " + endpointNumber);
-              break;
-            default:
-              System.out.println("endpoint type cannot be determined for " + endpointNumber + " with type " + endpointType);
-              break;
+                Map<String, String> httpHeader = new HashMap<>();
+                String httpUrl = env.get("ENDPOINTS_" + endpointNumber + "_URL");
+                httpHeader.put("X-HTTP-ENDPOINT", httpUrl);
+                for (Map.Entry<String, String> headerEntry : env.entrySet()) {
+                  String headerEntryKey = headerEntry.getKey();
+                  if (headerEntryKey.toUpperCase().startsWith("ENDPOINTS_" + endpointNumber + "_HEADER")) {
+                    String headerValue = headerEntry.getValue();
+                    int idx = headerValue.indexOf(":");
+                    httpHeader.put(headerValue.substring(0, idx), headerValue.substring(idx + 1));
+                  }
+                }
+                Route finalHttpRoute = httpRoute;
+                Endpoint httpEndpoint = new Endpoint() {{
+                  id = endpointId;
+                  type = endpointType;
+                  selector = httpSelector;
+                  route = finalHttpRoute;
+                  header = httpHeader;
+                }};
+                endpoints.add(httpEndpoint);
+                System.out.println("adding endpoint " + endpointNumber);
+                break;
+              case "jms":
+                String jmsSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
+                String jmsRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
+                Route jmsRoute;
+                if (jmsRouteName == null) {
+                  jmsRoute = routes.get(0);
+                } else {
+                  jmsRoute = getRouteFromList(routes, jmsRouteName);
+                }
+                if (jmsRoute == null) {
+                  //skip endpoint if config cannot be determined
+                  System.out.println("route for endpoint " + endpointNumber + " not found.");
+                  continue;
+                }
+                Map<String, String> jmsHeader = new HashMap<>();
+                String jmsInitialFactory = env.get("ENDPOINTS_" + endpointNumber + "_INITIALFACTORY");
+                String jmsProviderUrl = env.get("ENDPOINTS_" + endpointNumber + "_PROVIDERURL");
+                String jmsDestination = env.get("ENDPOINTS_" + endpointNumber + "_DESTINATION");
+                String jmsUser = env.get("ENDPOINTS_" + endpointNumber + "_USER");
+                String jmsPassword = env.get("ENDPOINTS_" + endpointNumber + "_PASSWORD");
+                String jmsFactory = env.getOrDefault("ENDPOINTS_" + endpointNumber + "_CONNECTIONFACTORY", "ConnectionFactory");
+                jmsHeader.put("X-JMS-INITIALFACTORY", jmsInitialFactory);
+                jmsHeader.put("X-JMS-CONNECTIONFACTORY", jmsFactory);
+                jmsHeader.put("X-JMS-PROVIDERURL", jmsProviderUrl);
+                jmsHeader.put("X-JMS-DESTINATION", jmsDestination);
+                jmsHeader.put("X-JMS-USER", jmsUser);
+                jmsHeader.put("X-JMS-PASSWORD", jmsPassword);
+                Route finalJmsRoute = jmsRoute;
+                Endpoint jmsEndpoint = new Endpoint() {{
+                  id = endpointId;
+                  type = endpointType;
+                  selector = jmsSelector;
+                  route = finalJmsRoute;
+                  header = jmsHeader;
+                }};
+                endpoints.add(jmsEndpoint);
+                System.out.println("adding endpoint " + endpointNumber);
+                break;
+              default:
+                System.out.println("endpoint type cannot be determined for " + endpointNumber + " with type " + endpointType);
+                break;
+            }
           }
         }
+        Collections.sort(endpoints);
+      } else {
+        System.out.println("no routes configured");
+        System.out.println("falling back to echo-on-edge-layer");
+        Endpoint echoEdgeEndpoint = new Endpoint() {{
+          id = 999;
+          type = "echo-on-edge-layer";
+          selector = "true";
+          route = new EchoRoute(999);
+        }};
+        endpoints.add(echoEdgeEndpoint);
       }
-      Collections.sort(endpoints);
-
       //start server
-      HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
-      HttpContext all = server.createContext("/", new RequestHandler(endpoints));
-      all.getFilters().add(new HealthCheckFilter());
-      if (hosts.size() > 0) {
-        all.getFilters().add(new HostFilter(hosts));
+//      HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
+//      HttpContext all = server.createContext("/", new RequestHandler(endpoints));
+//      all.getFilters().add(new HealthCheckFilter());
+//      if (hosts.size() > 0) {
+//        all.getFilters().add(new HostFilter(hosts));
+//      }
+      HttpHandler handler = new RequestHandler(endpoints);
+
+      if(hosts.size()>0){
+        HttpHandler x = handler;
+        handler = new HostHandler(hosts,x);
       }
+      Undertow server = Undertow.builder()
+              .addHttpListener(port, "0.0.0.0")
+              .setHandler(new HealthCheckHandler(handler))
+              .build();
 
       //shutdown hook
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("shutdown initiated");
-        server.stop(1);
+        server.stop();
         //shutdown all routes
         routes.parallelStream().forEach(Route::shutdown);
       }));
@@ -323,8 +331,7 @@ public class Main {
       System.out.println("Rùkǒu edge is running.");
       System.out.println("http://localhost:" + port + "/");
       server.start();
-    } catch (
-        Exception ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
       System.exit(1);
     }

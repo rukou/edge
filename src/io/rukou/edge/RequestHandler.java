@@ -1,17 +1,17 @@
 package io.rukou.edge;
 
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HttpString;
 import software.amazon.awssdk.utils.IoUtils;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.IOException;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class RequestHandler implements HttpHandler {
@@ -23,13 +23,14 @@ public class RequestHandler implements HttpHandler {
     this.endpoints = endpoints;
     ScriptEngineManager mgr = new ScriptEngineManager();
     jsEngine = mgr.getEngineByName("JavaScript");
-    if(jsEngine == null){
+    if (jsEngine == null) {
       System.err.println("no js engine found");
     }
   }
 
   @Override
-  public void handle(HttpExchange exchange) throws IOException {
+  public void handleRequest(HttpServerExchange exchange) {
+    System.out.println(exchange.getRequestMethod().toString() + " " + exchange.getRequestPath());
     try {
       //extract message object
       Message msg = new Message();
@@ -37,16 +38,18 @@ public class RequestHandler implements HttpHandler {
       msg.header.put("X-REQUEST-ID", requestId);
       msg.header.put("X-MESSAGE-VERSION", "2020-05-22");
       msg.header.put("X-MESSAGE-TYPE", "http-request");
-      msg.header.put("X-HTTP-METHOD", exchange.getRequestMethod());
-      msg.header.put("X-HTTP-PATH", exchange.getRequestURI().getPath());
+      msg.header.put("X-HTTP-METHOD", exchange.getRequestMethod().toString());
+      msg.header.put("X-HTTP-PATH", exchange.getRequestPath());
       msg.header.put("X-HTTP-TIMESTAMP", Instant.now().toString());
       msg.header.put("X-HTTP-HOST", exchange.getRequestHeaders().getFirst("Host"));
-      Headers headers = exchange.getRequestHeaders();
-      for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-        String keyName = entry.getKey().toUpperCase();
-        msg.header.put(keyName, String.join(", ", entry.getValue()));
+      HeaderMap headers = exchange.getRequestHeaders();
+      Collection<HttpString> headerEntries = headers.getHeaderNames();
+      for (HttpString headerKey : headerEntries) {
+        String keyName = headerKey.toString().toUpperCase();
+        msg.header.put(keyName, String.join(", ", headers.get(headerKey).toArray()));
       }
-      msg.body = IoUtils.toUtf8String(exchange.getRequestBody());
+      exchange.startBlocking();
+      msg.body = IoUtils.toUtf8String(exchange.getInputStream());
 
       //put into open connections
       Main.openConnections.put(requestId, exchange);
@@ -58,19 +61,11 @@ public class RequestHandler implements HttpHandler {
           jsEngine.eval("result = " + endpoint.selector);
           Boolean selectorMatches = (Boolean) jsEngine.get("result");
           if (selectorMatches) {
-            if(endpoint.type.equalsIgnoreCase("echo-on-edge-layer")){
-              System.out.println("delivering to endpoint " + endpoint.id+" (echo-on-edge-layer)");
-              msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
-              msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
-              msg.header.putAll(endpoint.header);
-              EchoUtils.respond(requestId,msg);
-            }else{
-              System.out.println("delivering to endpoint " + endpoint.id);
-              msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
-              msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
-              msg.header.putAll(endpoint.header);
-              endpoint.route.invokeEdge2Local(msg);
-            }
+            System.out.println("delivering to endpoint " + endpoint.alias + " (" + endpoint.type + ")");
+            msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
+            msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
+            msg.header.putAll(endpoint.header);
+            endpoint.route.invokeEdge2Local(msg);
           }
         }
       } catch (ScriptException ex) {
@@ -78,8 +73,8 @@ public class RequestHandler implements HttpHandler {
       }
     } catch (Exception ex) {
       ex.printStackTrace();
-      exchange.sendResponseHeaders(500, 0);
-      exchange.getResponseBody().close();
+      exchange.setStatusCode(500);
+      exchange.endExchange();
     }
   }
 }

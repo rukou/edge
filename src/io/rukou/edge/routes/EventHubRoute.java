@@ -4,13 +4,16 @@ import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
 import com.azure.messaging.eventhubs.EventHubProducerClient;
-import com.sun.net.httpserver.HttpExchange;
 import io.rukou.edge.Main;
 import io.rukou.edge.Message;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
 
 public class EventHubRoute extends Route {
 
@@ -24,8 +27,8 @@ public class EventHubRoute extends Route {
 
     //create eventhubclient
     producer = new EventHubClientBuilder()
-        .connectionString(eventhubNamespaceUrl + ";EntityPath=edge2local")
-        .buildProducerClient();
+            .connectionString(eventhubNamespaceUrl + ";EntityPath=edge2local")
+            .buildProducerClient();
   }
 
   @Override
@@ -60,50 +63,49 @@ public class EventHubRoute extends Route {
 
   public void initLocal2EdgeSubscription() {
     EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
-        .connectionString(eventhubNamespaceUrl + ";EntityPath=local2edge")
-        .consumerGroup("$Default")
-        .buildAsyncConsumerClient();
+            .connectionString(eventhubNamespaceUrl + ";EntityPath=local2edge")
+            .consumerGroup("$Default")
+            .buildAsyncConsumerClient();
 
     consumer.receive(false)
-        .subscribe(partitionEvent -> {
-          EventData event = partitionEvent.getData();
+            .subscribe(partitionEvent -> {
+              EventData event = partitionEvent.getData();
 
-          Message msg = new Message();
-          for (Map.Entry<String, Object> entry : event.getProperties().entrySet()) {
-            msg.header.put(entry.getKey(), entry.getValue().toString());
-          }
-          msg.body = event.getBodyAsString();
+              Message msg = new Message();
+              for (Map.Entry<String, Object> entry : event.getProperties().entrySet()) {
+                msg.header.put(entry.getKey(), entry.getValue().toString());
+              }
+              msg.body = event.getBodyAsString();
 
-          String requestId = msg.getRequestId();
-          System.out.println("received " + requestId);
-          HttpExchange exchange = Main.openConnections.get(requestId);
+              String requestId = msg.getRequestId();
+              System.out.println("received " + requestId);
+              HttpServerExchange exchange = Main.openConnections.get(requestId);
 
-          if (exchange == null) {
-            System.out.println("no client to send response to");
-            System.out.println(Main.openConnections.size() + " pending connections");
-            System.out.println("looking for " + requestId);
-            Enumeration<String> keys = Main.openConnections.keys();
-            while (keys.hasMoreElements()) {
-              String kk = keys.nextElement();
-              System.out.println(kk + " " + kk.equals(requestId));
-            }
-          } else {
-            Main.openConnections.remove(requestId);
-            try {
-              String statusCodeString = msg.header.get("X-HTTP-STATUSCODE");
-              int statusCode = Integer.parseInt(statusCodeString);
+              if (exchange == null) {
+                System.out.println("no client to send response to");
+                System.out.println(Main.openConnections.size() + " pending connections");
+                System.out.println("looking for " + requestId);
+                Enumeration<String> keys = Main.openConnections.keys();
+                while (keys.hasMoreElements()) {
+                  String kk = keys.nextElement();
+                  System.out.println(kk + " " + kk.equals(requestId));
+                }
+              } else {
+                Main.openConnections.remove(requestId);
+                try {
+                  String statusCodeString = msg.header.get("X-HTTP-STATUSCODE");
+                  int statusCode = Integer.parseInt(statusCodeString);
 
-              byte[] out = msg.body.getBytes(StandardCharsets.UTF_8);
-              exchange.getResponseHeaders().add("Content-Type", "application/json");
-              exchange.sendResponseHeaders(statusCode, out.length);
-              OutputStream os = exchange.getResponseBody();
-              os.write(out);
-              os.close();
-            } catch (Exception ex) {
-              ex.printStackTrace();
-            }
-          }
-        }, error -> System.err.print(error.toString()));
+                  exchange.setStatusCode(statusCode);
+                  exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                  exchange.getResponseSender().send(msg.body);
+                  exchange.getResponseSender().close();
+                  exchange.endExchange();
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              }
+            }, error -> System.err.print(error.toString()));
   }
 
   public void shutdown() {
