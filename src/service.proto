@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package io.rukou.routing;
+package io.rukou.routing.v1;
 
 service RequestHandler {
-  rpc getRequest(Ack) returns (stream Message) {}
-  rpc respond(stream Message) returns (Ack) {}
+  rpc edgetolocal(Capacity) returns (stream Message) {}
+  rpc localtoedge(Message) returns (Ack) {}
 }
 
 message Message {
@@ -12,6 +12,9 @@ message Message {
   string body = 3;
 }
 
+message Capacity {
+  int32 requests = 1;
+}
 message Ack {
   string status = 1;
 }

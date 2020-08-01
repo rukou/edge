@@ -1,22 +1,22 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package io.rukou.edge.routes;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.rukou.edge.Message;
+
+import java.util.Stack;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public enum MemoryRoute {
   INSTANCE;
 
-  private Cache<String, Message> cache;
+  public Cache<String, CompletableFuture<Message>> futureCache;
+  public Stack<Message> stack = new Stack<>();
 
-  private MemoryRoute() {
-    this.cache = CacheBuilder.newBuilder().expireAfterWrite(30L, TimeUnit.SECONDS).removalListener((removal) -> {
+  MemoryRoute() {
+    this.futureCache = CacheBuilder.newBuilder().expireAfterAccess(30L, TimeUnit.SECONDS).removalListener((removal) -> {
       System.out.println("request timeout: " + ((Message)removal.getValue()).toString());
     }).build();
   }
@@ -24,8 +24,14 @@ public enum MemoryRoute {
   public void shutdown() {
   }
 
-  public void invokeEdge2Local(Message msg) {
-    this.cache.put(msg.getRequestId(), msg);
+  public Future<Message> invokeEdge2Local(Message msg) {
+    CompletableFuture<Message> completableFuture
+            = new CompletableFuture<>();
+
+    this.stack.push(msg);
+    this.futureCache.put(msg.getRequestId(), completableFuture);
+
+    return completableFuture;
   }
 
   public void initLocal2EdgeSubscription() {

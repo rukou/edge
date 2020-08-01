@@ -150,7 +150,6 @@ public class Main {
                 break;
               case "jms":
                 String jmsSelector = env.get("ENDPOINTS_" + endpointNumber + "_SELECTOR");
-                String jmsRouteName = env.get("ENDPOINTS_" + endpointNumber + "_ROUTE");
                 Map<String, String> jmsHeader = new HashMap<>();
                 String jmsInitialFactory = env.get("ENDPOINTS_" + endpointNumber + "_INITIALFACTORY");
                 String jmsProviderUrl = env.get("ENDPOINTS_" + endpointNumber + "_PROVIDERURL");
@@ -191,7 +190,7 @@ public class Main {
       Server server = sb.build();
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("shutdown initiated");
-        server.stop();
+        server.stop().join();
       }));
       System.out.println("Rùkǒu edge is running.");
       System.out.println("http://localhost:" + port + "/");
