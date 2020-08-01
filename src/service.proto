@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package io.rukou.routing;
+
+service RequestHandler {
+  rpc getRequest(Ack) returns (stream Message) {}
+  rpc respond(stream Message) returns (Ack) {}
+}
+
+message Message {
+  map<string, string> header = 2;
+  string body = 3;
+}
+
+message Ack {
+  string status = 1;
+}
