@@ -8,8 +8,8 @@ import io.rukou.routing.v1.Service.Message;
 
 import java.util.concurrent.CompletableFuture;
 
-public class RequestHandler extends RequestHandlerImplBase {
-  public RequestHandler() {
+public class GrpcRequestHandler extends RequestHandlerImplBase {
+  public GrpcRequestHandler() {
   }
 
   @Override

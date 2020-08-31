@@ -3,16 +3,18 @@ package io.rukou.edge;
 import com.linecorp.armeria.server.Server;
 import com.linecorp.armeria.server.ServerBuilder;
 import com.linecorp.armeria.server.grpc.GrpcService;
+import io.rukou.edge.routes.GrpcRequestHandler;
 import io.rukou.edge.routes.MemoryRoute;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class Main {
   public static int port = 8080;
@@ -185,12 +187,18 @@ public class Main {
       //start server
       ServerBuilder sb = Server.builder();
       sb.http(new InetSocketAddress(port));
-      sb.serviceUnder("/", new RequestHandler(endpoints));
-      sb.service(GrpcService.builder().addService(new io.rukou.edge.routes.RequestHandler()).build());
+      sb.serviceUnder("/", new HttpRequestHandler(endpoints));
+      sb.service(GrpcService.builder().addService(new GrpcRequestHandler()).build());
       Server server = sb.build();
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("shutdown initiated");
-        server.stop().join();
+        try {
+          server.stop().get(30, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+          //ignore
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }));
       System.out.println("Rùkǒu edge is running.");
       System.out.println("http://localhost:" + port + "/");

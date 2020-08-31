@@ -1,23 +1,29 @@
 package io.rukou.edge;
 
+import com.linecorp.armeria.common.AggregatedHttpRequest;
+import com.linecorp.armeria.common.HttpObject;
 import com.linecorp.armeria.common.HttpRequest;
 import com.linecorp.armeria.common.HttpResponse;
 import com.linecorp.armeria.common.RequestHeaders;
 import com.linecorp.armeria.server.HttpService;
 import com.linecorp.armeria.server.ServiceRequestContext;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
-public class RequestHandler implements HttpService {
+public class HttpRequestHandler implements HttpService {
   final List<Endpoint> endpoints;
   final ScriptEngine jsEngine;
 
-  public RequestHandler(List<Endpoint> endpoints) {
+  public HttpRequestHandler(List<Endpoint> endpoints) {
     this.endpoints = endpoints;
     ScriptEngineManager mgr = new ScriptEngineManager();
     this.jsEngine = mgr.getEngineByName("JavaScript");
@@ -45,8 +51,38 @@ public class RequestHandler implements HttpService {
         msg.header.put(key.toString(), val);
       });
 
-      msg.body = req.aggregate().join().contentUtf8();
+      System.out.println("get aggregate");
+      System.out.println("waiting for future");
+      req.subscribe(new Subscriber<HttpObject>() {
+                      @Override
+                      public void onSubscribe(Subscription subscription) {
+                        System.out.println("onSubscribe");
+                      }
 
+                      @Override
+                      public void onNext(HttpObject httpObject) {
+                        System.out.println("eos: "+httpObject.isEndOfStream());
+                        System.out.println("eos: "+httpObject.toString());
+                      }
+
+                      @Override
+                      public void onError(Throwable throwable) {
+                        System.out.println("error");
+                        throwable.printStackTrace();
+                      }
+
+                      @Override
+                      public void onComplete() {
+                        System.out.println("request done");
+                      }
+                    }
+      );
+//      CompletableFuture<AggregatedHttpRequest> agg = req.aggregate();
+
+//      AggregatedHttpRequest requestData = agg.get(2, TimeUnit.SECONDS);
+      System.out.println("get content string");
+//      msg.body = requestData.contentUtf8();
+msg.body="";
       //determine endpoint
       try {
         jsEngine.put("header", msg.header);
@@ -58,7 +94,9 @@ public class RequestHandler implements HttpService {
             msg.header.put("X-ENDPOINT-TYPE", endpoint.type);
             msg.header.put("X-ENDPOINT-ID", String.valueOf(endpoint.id));
             msg.header.putAll(endpoint.header);
-            endpoint.route.invokeEdge2Local(msg);
+            CompletableFuture<Message> result = endpoint.route.invokeEdge2Local(msg);
+            Message responseMsg = result.join();
+            return HttpResponse.of(205);
           }
         }
       } catch (ScriptException ex) {

@@ -24,7 +24,7 @@ public enum MemoryRoute {
   public void shutdown() {
   }
 
-  public Future<Message> invokeEdge2Local(Message msg) {
+  public CompletableFuture<Message> invokeEdge2Local(Message msg) {
     CompletableFuture<Message> completableFuture
             = new CompletableFuture<>();
 
